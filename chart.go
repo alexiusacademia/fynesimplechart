@@ -18,6 +18,8 @@ type ScatterPlot struct {
 	XAxisTitle string
 	YAxisTitle string
 
+	ShowLine bool
+
 	mTop    float32
 	mBottom float32
 	mLeft   float32
@@ -30,6 +32,7 @@ func NewGraphWidget(nodes []Node, ticks int, xAxisTitle string, yAxisTitle strin
 		Ticks:      ticks,
 		XAxisTitle: xAxisTitle,
 		YAxisTitle: yAxisTitle,
+		ShowLine:   true,
 		mTop:       30,
 		mBottom:    30,
 		mLeft:      60,
@@ -168,18 +171,20 @@ func (r *scatterChartRenderer) drawNodes() {
 	}
 
 	// Connect nodes
-	for i := 0; i < (len(nodes) - 1); i++ {
-		x1 := (nodes[i].X+1)*scaleX + mLeft
-		y1 := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY
-		x2 := (nodes[i+1].X+1)*scaleX + mLeft
-		y2 := mTop + plotAreaHeight - (nodes[i+1].Y+1)*scaleY
+	if r.widget.ShowLine {
+		for i := 0; i < (len(nodes) - 1); i++ {
+			x1 := (nodes[i].X+1)*scaleX + mLeft
+			y1 := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY
+			x2 := (nodes[i+1].X+1)*scaleX + mLeft
+			y2 := mTop + plotAreaHeight - (nodes[i+1].Y+1)*scaleY
 
-		l := canvas.NewLine(theme.ForegroundColor())
-		l.StrokeWidth = 1.5
-		l.StrokeColor = theme.ForegroundColor()
-		l.Position1 = fyne.NewPos(x1, y1)
-		l.Position2 = fyne.NewPos(x2, y2)
-		r.objects = append(r.objects, l)
+			l := canvas.NewLine(theme.ForegroundColor())
+			l.StrokeWidth = 1.5
+			l.StrokeColor = theme.ForegroundColor()
+			l.Position1 = fyne.NewPos(x1, y1)
+			l.Position2 = fyne.NewPos(x2, y2)
+			r.objects = append(r.objects, l)
+		}
 	}
 
 	// Draw axes
@@ -228,6 +233,16 @@ func (r *scatterChartRenderer) drawNodes() {
 	))
 	r.objects = append(r.objects, axisDirectionTextX)
 
+	// Display the axes titles
+	xAxisTitle := canvas.NewText(r.widget.XAxisTitle, theme.ForegroundColor())
+	xAxisTitle.TextStyle.Bold = true
+	xAxisTitle.TextSize = 14
+	xAxisTitle.Move(
+		fyne.NewPos(
+			mLeft,
+			r.widget.Size().Height-mBottom/2-xAxisTitle.MinSize().Height/2,
+		))
+	r.objects = append(r.objects, xAxisTitle)
 }
 
 func (r *scatterChartRenderer) drawBorder() {
