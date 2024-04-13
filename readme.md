@@ -48,3 +48,6 @@ func main() {
 }
 
 ```
+
+<img width="404" alt="Screenshot 2024-04-13 at 12 06 17 PM" src="https://github.com/alexiusacademia/fyne-simple-chart/assets/19258246/8d72061a-0d75-469e-b1fc-3cb6575e2d8f">
+
