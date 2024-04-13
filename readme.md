@@ -16,7 +16,7 @@ As of now, negative values are not yet implemented. Can be used in plotting to t
 ## Installation
 
 ```sh
-go get github.com/alexiusacademia/fyne-simple-chart
+go get github.com/alexiusacademia/fynesimplechart
 ```
 
 ## Usage
@@ -27,27 +27,27 @@ package main
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	fynesimplechart "github.com/alexiusacademia/fyne-simple-chart/package"
+	"github.com/alexiusacademia/fynesimplechart"
 )
 
 func main() {
-	nodes := []fynesimplechart.Node{
-		*fynesimplechart.NewNode(1, 3),
-		*fynesimplechart.NewNode(2, 0.5),
-		*fynesimplechart.NewNode(5, 0.5),
-		*fynesimplechart.NewNode(6, 3),
-	}
-
-	ch := fynesimplechart.NewGraphWidget(nodes, 10, "Horizontal", "Vertical")
-
 	a := app.New()
 	w := a.NewWindow("Hello")
-	w.Resize(fyne.NewSize(400, 300))
-	w.SetContent(ch)
+
+	nodes := []fynesimplechart.Node{
+		*fynesimplechart.NewNode(1, 1),
+		*fynesimplechart.NewNode(1, 3),
+		*fynesimplechart.NewNode(4, 0),
+		*fynesimplechart.NewNode(5, 2),
+	}
+
+	scatter := fynesimplechart.NewGraphWidget(nodes, 5, "Horizontal", "Vertical")
+	scatter.Resize(fyne.NewSize(400, 300))
+
+	w.SetContent(scatter)
 	w.ShowAndRun()
 }
 
 ```
 
 <img width="404" alt="Screenshot 2024-04-13 at 12 06 17 PM" src="https://github.com/alexiusacademia/fyne-simple-chart/assets/19258246/8d72061a-0d75-469e-b1fc-3cb6575e2d8f">
-
