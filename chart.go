@@ -230,11 +230,6 @@ func (r *scatterChartRenderer) drawNodes() {
 
 }
 
-// Helper function to flip the y ordinate so it matches the screen coordinate system.
-func flipY(height float32, y float32) float32 {
-	return 0
-}
-
 func (r *scatterChartRenderer) drawBorder() {
 	size := r.widget.Size()
 	width := size.Width
