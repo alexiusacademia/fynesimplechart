@@ -29,7 +29,7 @@ func NewGraphWidget(plots []Plot) *ScatterPlot {
 		mTop:    30,
 		mBottom: 30,
 		mLeft:   60,
-		mRight:  30,
+		mRight:  80,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -118,6 +118,8 @@ func (r *scatterChartRenderer) drawNodes() {
 		return
 	}
 
+	colors := []color.Color{}
+
 	for i := 0; i < len(r.widget.Plots); i++ {
 		// Generate randome color
 		red := rand.Intn(255)
@@ -125,6 +127,7 @@ func (r *scatterChartRenderer) drawNodes() {
 		blue := rand.Intn(255)
 
 		plotColor := color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: 255}
+		colors = append(colors, plotColor)
 
 		nodes := r.widget.Plots[i].Nodes
 
@@ -223,17 +226,30 @@ func (r *scatterChartRenderer) drawNodes() {
 			mTop+plotAreaHeight-scaleY,
 		))
 		r.objects = append(r.objects, axisDirectionTextX)
+	}
 
-		// Display the axes titles
-		// xAxisTitle := canvas.NewText(r.widget.Plots[i].XAxisTitle, theme.ForegroundColor())
-		// xAxisTitle.TextStyle.Bold = true
-		// xAxisTitle.TextSize = 14
-		// xAxisTitle.Move(
-		// 	fyne.NewPos(
-		// 		mLeft,
-		// 		r.widget.Size().Height-mBottom/2-xAxisTitle.MinSize().Height/2,
-		// 	))
-		// r.objects = append(r.objects, xAxisTitle)
+	// Draw legends
+	legendText := canvas.NewText("LEGEND", theme.ForegroundColor())
+	legendText.TextSize = 12
+	legendText.TextStyle.Bold = true
+	legendText.Move(fyne.NewPos(widgetWidth-mRight+5, mTop+5))
+	r.objects = append(r.objects, legendText)
+
+	currentY := mTop + 20
+
+	for i := 0; i < len(r.widget.Plots); i++ {
+		currentY += 20
+		c := canvas.NewCircle(colors[i])
+		c.FillColor = colors[i]
+		c.StrokeColor = colors[i]
+		c.StrokeWidth = 1
+		c.Resize(fyne.NewSize(5, 5))
+		c.Move(fyne.NewPos(widgetWidth-mRight+10, currentY))
+		r.objects = append(r.objects, c)
+
+		label := canvas.NewText(r.widget.Plots[i].Title, colors[i])
+		label.Move(fyne.NewPos(widgetWidth-mRight+10+20, currentY-label.MinSize().Height/2))
+		r.objects = append(r.objects, label)
 	}
 
 }
