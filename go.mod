@@ -1,8 +1,11 @@
-module github.com/alexiusacademia/fyne-simple-chart
+module github.com/alexiusacademia/fynesimplechart
 
 go 1.22.0
 
-require fyne.io/fyne/v2 v2.4.4
+require (
+	fyne.io/fyne/v2 v2.4.4
+	github.com/alexiusacademia/fyne-simple-chart v0.0.0-20240413035911-92ac22b709a6
+)
 
 require (
 	fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e // indirect
