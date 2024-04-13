@@ -44,13 +44,22 @@ func main() {
 	plot := fynesimplechart.NewPlot(nodes)
 	plot.ShowLine = true
 
-	scatter := fynesimplechart.NewGraphWidget([]fynesimplechart.Plot{*plot})
+	nodes2 := []fynesimplechart.Node{
+		*fynesimplechart.NewNode(1.5, 5),
+		*fynesimplechart.NewNode(5, 4),
+		*fynesimplechart.NewNode(8, 7),
+		*fynesimplechart.NewNode(10, 2),
+	}
+	plot2 := fynesimplechart.NewPlot(nodes2)
+	plot2.ShowLine = true
 
+	scatter := fynesimplechart.NewGraphWidget([]fynesimplechart.Plot{*plot, *plot2})
 	scatter.Resize(fyne.NewSize(400, 300))
 
 	w.SetContent(scatter)
 	w.ShowAndRun()
 }
+
 
 ```
 
