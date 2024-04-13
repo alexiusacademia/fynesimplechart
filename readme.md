@@ -41,7 +41,11 @@ func main() {
 		*fynesimplechart.NewNode(5, 2),
 	}
 
-	scatter := fynesimplechart.NewGraphWidget(nodes, 5, "Horizontal", "Vertical")
+	plot := fynesimplechart.NewPlot(nodes)
+	plot.ShowLine = true
+
+	scatter := fynesimplechart.NewGraphWidget([]fynesimplechart.Plot{*plot})
+
 	scatter.Resize(fyne.NewSize(400, 300))
 
 	w.SetContent(scatter)

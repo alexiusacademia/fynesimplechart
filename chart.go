@@ -13,12 +13,7 @@ import (
 type ScatterPlot struct {
 	widget.BaseWidget
 
-	Nodes      []Node
-	Ticks      int
-	XAxisTitle string
-	YAxisTitle string
-
-	ShowLine bool
+	Plots []Plot
 
 	mTop    float32
 	mBottom float32
@@ -27,16 +22,13 @@ type ScatterPlot struct {
 }
 
 // Constructor
-func NewGraphWidget(nodes []Node, ticks int, xAxisTitle string, yAxisTitle string) *ScatterPlot {
-	w := &ScatterPlot{Nodes: nodes,
-		Ticks:      ticks,
-		XAxisTitle: xAxisTitle,
-		YAxisTitle: yAxisTitle,
-		ShowLine:   true,
-		mTop:       30,
-		mBottom:    30,
-		mLeft:      60,
-		mRight:     30,
+func NewGraphWidget(plots []Plot) *ScatterPlot {
+	w := &ScatterPlot{
+		Plots:   plots,
+		mTop:    30,
+		mBottom: 30,
+		mLeft:   60,
+		mRight:  30,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -45,15 +37,7 @@ func NewGraphWidget(nodes []Node, ticks int, xAxisTitle string, yAxisTitle strin
 // Generates a new renderer for the RatingCurveView.
 func (v *ScatterPlot) CreateRenderer() fyne.WidgetRenderer {
 	v.ExtendBaseWidget(v) // Ensure the base widget is extended properly
-	if v.Ticks == 0 {
-		v.Ticks = 10
-	}
-	if v.XAxisTitle == "" {
-		v.XAxisTitle = "Horizontal Axis"
-	}
-	if v.YAxisTitle == "" {
-		v.YAxisTitle = "Vertical Axis"
-	}
+
 	return &scatterChartRenderer{widget: v}
 }
 
@@ -115,134 +99,136 @@ func (r *scatterChartRenderer) drawNodes() {
 	widgetSize := r.widget.Size()
 	widgetWidth := widgetSize.Width
 
-	// Note: Stick to width to get ratios
-
-	nodes := r.widget.Nodes
-
 	// Get the minimums and maximums of coordinates
-	maxX, err := MaxX(nodes)
+	maxX, err := MaxX(r.widget.Plots)
 	if err != nil {
 		return
 	}
-	minX, err := MinX(nodes)
+	minX, err := MinX(r.widget.Plots)
 	if err != nil {
 		return
 	}
-	maxY, err := MaxY(nodes)
+	maxY, err := MaxY(r.widget.Plots)
 	if err != nil {
 		return
 	}
-	minY, err := MinY(nodes)
+	minY, err := MinY(r.widget.Plots)
 	if err != nil {
 		return
 	}
 
-	chartUnScaledWidth := maxX - minX
-	chartUnScaledHeight := maxY - minY
-	if chartUnScaledHeight == 0 {
-		log.Fatal("Nothing to plot in y axis")
-		return
-	}
+	for i := 0; i < len(r.widget.Plots); i++ {
+		// Note: Stick to width to get ratios
+		nodes := r.widget.Plots[i].Nodes
 
-	// Get the ratio of chart max width and max height plots
-	plotAreaWidth := widgetWidth - mLeft - mRight
-	plotAreaHeight := widgetSize.Height - mTop - mBottom
-
-	scaleX := plotAreaWidth / (chartUnScaledWidth + 2)
-	scaleY := plotAreaHeight / (chartUnScaledHeight + 2)
-
-	// originPosition := fyne.NewPos(mLeft, widgetSize.Height-mBottom)
-
-	// Start the plotting of nodes
-	for i := 0; i < len(nodes); i++ {
-		// Create a canvas circle
-		c := canvas.NewCircle(theme.ForegroundColor())
-		c.FillColor = theme.ForegroundColor()
-		c.StrokeColor = theme.ForegroundColor()
-		c.StrokeWidth = 1
-		radius := 2
-
-		x := (nodes[i].X+1)*scaleX + mLeft - float32(radius)                 // Always add 1 for the clearance
-		y := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY - float32(radius) // Always add 1 for the clearance
-
-		c.Resize(fyne.NewSize(float32(radius)*2, float32(radius)*2))
-		c.Move(fyne.NewPos(x, y))
-		r.objects = append(r.objects, c)
-	}
-
-	// Connect nodes
-	if r.widget.ShowLine {
-		for i := 0; i < (len(nodes) - 1); i++ {
-			x1 := (nodes[i].X+1)*scaleX + mLeft
-			y1 := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY
-			x2 := (nodes[i+1].X+1)*scaleX + mLeft
-			y2 := mTop + plotAreaHeight - (nodes[i+1].Y+1)*scaleY
-
-			l := canvas.NewLine(theme.ForegroundColor())
-			l.StrokeWidth = 1.5
-			l.StrokeColor = theme.ForegroundColor()
-			l.Position1 = fyne.NewPos(x1, y1)
-			l.Position2 = fyne.NewPos(x2, y2)
-			r.objects = append(r.objects, l)
+		chartUnScaledWidth := maxX - minX
+		chartUnScaledHeight := maxY - minY
+		if chartUnScaledHeight == 0 {
+			log.Fatal("Nothing to plot in y axis")
+			return
 		}
+
+		// Get the ratio of chart max width and max height plots
+		plotAreaWidth := widgetWidth - mLeft - mRight
+		plotAreaHeight := widgetSize.Height - mTop - mBottom
+
+		scaleX := plotAreaWidth / (chartUnScaledWidth + 2)
+		scaleY := plotAreaHeight / (chartUnScaledHeight + 2)
+
+		// originPosition := fyne.NewPos(mLeft, widgetSize.Height-mBottom)
+
+		// Start the plotting of nodes
+		for i := 0; i < len(nodes); i++ {
+			// Create a canvas circle
+			c := canvas.NewCircle(theme.ForegroundColor())
+			c.FillColor = theme.ForegroundColor()
+			c.StrokeColor = theme.ForegroundColor()
+			c.StrokeWidth = 1
+			radius := 2
+
+			x := (nodes[i].X+1)*scaleX + mLeft - float32(radius)                 // Always add 1 for the clearance
+			y := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY - float32(radius) // Always add 1 for the clearance
+
+			c.Resize(fyne.NewSize(float32(radius)*2, float32(radius)*2))
+			c.Move(fyne.NewPos(x, y))
+			r.objects = append(r.objects, c)
+		}
+
+		// Connect nodes
+		if r.widget.Plots[i].ShowLine {
+			for i := 0; i < (len(nodes) - 1); i++ {
+				x1 := (nodes[i].X+1)*scaleX + mLeft
+				y1 := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY
+				x2 := (nodes[i+1].X+1)*scaleX + mLeft
+				y2 := mTop + plotAreaHeight - (nodes[i+1].Y+1)*scaleY
+
+				l := canvas.NewLine(theme.ForegroundColor())
+				l.StrokeWidth = 1.5
+				l.StrokeColor = theme.ForegroundColor()
+				l.Position1 = fyne.NewPos(x1, y1)
+				l.Position2 = fyne.NewPos(x2, y2)
+				r.objects = append(r.objects, l)
+			}
+		}
+
+		// Draw axes
+		xAxis := canvas.NewLine(theme.ForegroundColor())
+		xAxis.StrokeWidth = 0.5
+		xAxis.StrokeColor = theme.ForegroundColor()
+		xAxis.Position1.X = mLeft
+		xAxis.Position1.Y = mTop + plotAreaHeight - scaleY
+		xAxis.Position2.X = mLeft + plotAreaWidth
+		xAxis.Position2.Y = xAxis.Position1.Y
+		r.objects = append(r.objects, xAxis)
+
+		yAxis := canvas.NewLine(theme.ForegroundColor())
+		yAxis.StrokeWidth = 0.5
+		yAxis.StrokeColor = theme.ForegroundColor()
+		yAxis.Position1.X = mLeft + scaleX
+		yAxis.Position1.Y = mTop
+		yAxis.Position2.X = mLeft + scaleX
+		yAxis.Position2.Y = mTop + plotAreaHeight
+		r.objects = append(r.objects, yAxis)
+
+		xAxisArrow := canvas.NewText(">", theme.ForegroundColor())
+		xAxisArrow.TextSize = 18
+		xAxisArrow.Move(fyne.NewPos(mLeft+plotAreaWidth-xAxisArrow.MinSize().Width,
+			mTop+plotAreaHeight-xAxisArrow.MinSize().Height/2-scaleY,
+		))
+		r.objects = append(r.objects, xAxisArrow)
+
+		yAxisArrow := canvas.NewText("^", theme.ForegroundColor())
+		yAxisArrow.TextSize = 18
+		yAxisArrow.Move(fyne.NewPos(mLeft+scaleX-yAxisArrow.MinSize().Width/2, mTop))
+		r.objects = append(r.objects, yAxisArrow)
+
+		axisDirectionTextY := canvas.NewText("Y", theme.ForegroundColor())
+		axisDirectionTextY.TextSize = 16
+		axisDirectionTextY.Move(fyne.NewPos(
+			mLeft+scaleX-axisDirectionTextY.MinSize().Width,
+			mTop+mTop/2))
+		r.objects = append(r.objects, axisDirectionTextY)
+
+		axisDirectionTextX := canvas.NewText("X", theme.ForegroundColor())
+		axisDirectionTextX.TextSize = 16
+		axisDirectionTextX.Move(fyne.NewPos(
+			mLeft+plotAreaWidth-mRight/2,
+			mTop+plotAreaHeight-scaleY,
+		))
+		r.objects = append(r.objects, axisDirectionTextX)
+
+		// Display the axes titles
+		xAxisTitle := canvas.NewText(r.widget.Plots[i].XAxisTitle, theme.ForegroundColor())
+		xAxisTitle.TextStyle.Bold = true
+		xAxisTitle.TextSize = 14
+		xAxisTitle.Move(
+			fyne.NewPos(
+				mLeft,
+				r.widget.Size().Height-mBottom/2-xAxisTitle.MinSize().Height/2,
+			))
+		r.objects = append(r.objects, xAxisTitle)
 	}
 
-	// Draw axes
-	xAxis := canvas.NewLine(theme.ForegroundColor())
-	xAxis.StrokeWidth = 0.5
-	xAxis.StrokeColor = theme.ForegroundColor()
-	xAxis.Position1.X = mLeft
-	xAxis.Position1.Y = mTop + plotAreaHeight - scaleY
-	xAxis.Position2.X = mLeft + plotAreaWidth
-	xAxis.Position2.Y = xAxis.Position1.Y
-	r.objects = append(r.objects, xAxis)
-
-	yAxis := canvas.NewLine(theme.ForegroundColor())
-	yAxis.StrokeWidth = 0.5
-	yAxis.StrokeColor = theme.ForegroundColor()
-	yAxis.Position1.X = mLeft + scaleX
-	yAxis.Position1.Y = mTop
-	yAxis.Position2.X = mLeft + scaleX
-	yAxis.Position2.Y = mTop + plotAreaHeight
-	r.objects = append(r.objects, yAxis)
-
-	xAxisArrow := canvas.NewText(">", theme.ForegroundColor())
-	xAxisArrow.TextSize = 18
-	xAxisArrow.Move(fyne.NewPos(mLeft+plotAreaWidth-xAxisArrow.MinSize().Width,
-		mTop+plotAreaHeight-xAxisArrow.MinSize().Height/2-scaleY,
-	))
-	r.objects = append(r.objects, xAxisArrow)
-
-	yAxisArrow := canvas.NewText("^", theme.ForegroundColor())
-	yAxisArrow.TextSize = 18
-	yAxisArrow.Move(fyne.NewPos(mLeft+scaleX-yAxisArrow.MinSize().Width/2, mTop))
-	r.objects = append(r.objects, yAxisArrow)
-
-	axisDirectionTextY := canvas.NewText("Y", theme.ForegroundColor())
-	axisDirectionTextY.TextSize = 16
-	axisDirectionTextY.Move(fyne.NewPos(
-		mLeft+scaleX-axisDirectionTextY.MinSize().Width,
-		mTop+mTop/2))
-	r.objects = append(r.objects, axisDirectionTextY)
-
-	axisDirectionTextX := canvas.NewText("X", theme.ForegroundColor())
-	axisDirectionTextX.TextSize = 16
-	axisDirectionTextX.Move(fyne.NewPos(
-		mLeft+plotAreaWidth-mRight/2,
-		mTop+plotAreaHeight-scaleY,
-	))
-	r.objects = append(r.objects, axisDirectionTextX)
-
-	// Display the axes titles
-	xAxisTitle := canvas.NewText(r.widget.XAxisTitle, theme.ForegroundColor())
-	xAxisTitle.TextStyle.Bold = true
-	xAxisTitle.TextSize = 14
-	xAxisTitle.Move(
-		fyne.NewPos(
-			mLeft,
-			r.widget.Size().Height-mBottom/2-xAxisTitle.MinSize().Height/2,
-		))
-	r.objects = append(r.objects, xAxisTitle)
 }
 
 func (r *scatterChartRenderer) drawBorder() {

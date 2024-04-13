@@ -11,7 +11,13 @@ func NewNode(x float32, y float32) *Node {
 	return &Node{X: x, Y: y}
 }
 
-func MinY(nodes []Node) (float32, error) {
+func MinY(plots []Plot) (float32, error) {
+	nodes := []Node{}
+
+	for _, p := range plots {
+		nodes = append(nodes, p.Nodes...)
+	}
+
 	if len(nodes) == 0 {
 		return 0, errors.New("No nodes to iterate.")
 	}
@@ -35,7 +41,13 @@ func MinY(nodes []Node) (float32, error) {
 	return minimum, nil
 }
 
-func MaxY(nodes []Node) (float32, error) {
+func MaxY(plots []Plot) (float32, error) {
+	nodes := []Node{}
+
+	for _, p := range plots {
+		nodes = append(nodes, p.Nodes...)
+	}
+
 	if len(nodes) == 0 {
 		return 0, errors.New("No nodes to iterate.")
 	}
@@ -53,7 +65,13 @@ func MaxY(nodes []Node) (float32, error) {
 	return maximum, nil
 }
 
-func MinX(nodes []Node) (float32, error) {
+func MinX(plots []Plot) (float32, error) {
+	nodes := []Node{}
+
+	for _, p := range plots {
+		nodes = append(nodes, p.Nodes...)
+	}
+
 	if len(nodes) == 0 {
 		return 0, errors.New("No nodes to iterate.")
 	}
@@ -81,7 +99,13 @@ func MinX(nodes []Node) (float32, error) {
 	return minimum, nil
 }
 
-func MaxX(nodes []Node) (float32, error) {
+func MaxX(plots []Plot) (float32, error) {
+	nodes := []Node{}
+
+	for _, p := range plots {
+		nodes = append(nodes, p.Nodes...)
+	}
+
 	if len(nodes) == 0 {
 		return 0, errors.New("No nodes to iterate.")
 	}
