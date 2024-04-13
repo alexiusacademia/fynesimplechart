@@ -3,6 +3,7 @@ package fynesimplechart
 import (
 	"image/color"
 	"log"
+	"math/rand"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -118,7 +119,13 @@ func (r *scatterChartRenderer) drawNodes() {
 	}
 
 	for i := 0; i < len(r.widget.Plots); i++ {
-		// Note: Stick to width to get ratios
+		// Generate randome color
+		red := rand.Intn(255)
+		green := rand.Intn(255)
+		blue := rand.Intn(255)
+
+		plotColor := color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: 255}
+
 		nodes := r.widget.Plots[i].Nodes
 
 		chartUnScaledWidth := maxX - minX
@@ -138,16 +145,16 @@ func (r *scatterChartRenderer) drawNodes() {
 		// originPosition := fyne.NewPos(mLeft, widgetSize.Height-mBottom)
 
 		// Start the plotting of nodes
-		for i := 0; i < len(nodes); i++ {
+		for j := 0; j < len(nodes); j++ {
 			// Create a canvas circle
-			c := canvas.NewCircle(theme.ForegroundColor())
-			c.FillColor = theme.ForegroundColor()
-			c.StrokeColor = theme.ForegroundColor()
+			c := canvas.NewCircle(plotColor)
+			c.FillColor = plotColor
+			c.StrokeColor = plotColor
 			c.StrokeWidth = 1
 			radius := 2
 
-			x := (nodes[i].X+1)*scaleX + mLeft - float32(radius)                 // Always add 1 for the clearance
-			y := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY - float32(radius) // Always add 1 for the clearance
+			x := (nodes[j].X+1)*scaleX + mLeft - float32(radius)                 // Always add 1 for the clearance
+			y := mTop + plotAreaHeight - (nodes[j].Y+1)*scaleY - float32(radius) // Always add 1 for the clearance
 
 			c.Resize(fyne.NewSize(float32(radius)*2, float32(radius)*2))
 			c.Move(fyne.NewPos(x, y))
@@ -156,15 +163,15 @@ func (r *scatterChartRenderer) drawNodes() {
 
 		// Connect nodes
 		if r.widget.Plots[i].ShowLine {
-			for i := 0; i < (len(nodes) - 1); i++ {
-				x1 := (nodes[i].X+1)*scaleX + mLeft
-				y1 := mTop + plotAreaHeight - (nodes[i].Y+1)*scaleY
-				x2 := (nodes[i+1].X+1)*scaleX + mLeft
-				y2 := mTop + plotAreaHeight - (nodes[i+1].Y+1)*scaleY
+			for k := 0; k < (len(nodes) - 1); k++ {
+				x1 := (nodes[k].X+1)*scaleX + mLeft
+				y1 := mTop + plotAreaHeight - (nodes[k].Y+1)*scaleY
+				x2 := (nodes[k+1].X+1)*scaleX + mLeft
+				y2 := mTop + plotAreaHeight - (nodes[k+1].Y+1)*scaleY
 
-				l := canvas.NewLine(theme.ForegroundColor())
+				l := canvas.NewLine(plotColor)
 				l.StrokeWidth = 1.5
-				l.StrokeColor = theme.ForegroundColor()
+				l.StrokeColor = plotColor
 				l.Position1 = fyne.NewPos(x1, y1)
 				l.Position2 = fyne.NewPos(x2, y2)
 				r.objects = append(r.objects, l)
@@ -218,15 +225,15 @@ func (r *scatterChartRenderer) drawNodes() {
 		r.objects = append(r.objects, axisDirectionTextX)
 
 		// Display the axes titles
-		xAxisTitle := canvas.NewText(r.widget.Plots[i].XAxisTitle, theme.ForegroundColor())
-		xAxisTitle.TextStyle.Bold = true
-		xAxisTitle.TextSize = 14
-		xAxisTitle.Move(
-			fyne.NewPos(
-				mLeft,
-				r.widget.Size().Height-mBottom/2-xAxisTitle.MinSize().Height/2,
-			))
-		r.objects = append(r.objects, xAxisTitle)
+		// xAxisTitle := canvas.NewText(r.widget.Plots[i].XAxisTitle, theme.ForegroundColor())
+		// xAxisTitle.TextStyle.Bold = true
+		// xAxisTitle.TextSize = 14
+		// xAxisTitle.Move(
+		// 	fyne.NewPos(
+		// 		mLeft,
+		// 		r.widget.Size().Height-mBottom/2-xAxisTitle.MinSize().Height/2,
+		// 	))
+		// r.objects = append(r.objects, xAxisTitle)
 	}
 
 }
