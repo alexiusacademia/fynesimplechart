@@ -17,10 +17,11 @@ Welcome to the FyneSimpleChart tutorials! These step-by-step guides will help yo
 8. [Color Palettes](08-color-palettes.md) - Using and creating color schemes
 
 ### Advanced Tutorials
-9. [Mathematical Visualizations](09-mathematical-functions.md) - Plotting functions and equations
-10. [Real-time Data](10-realtime-data.md) - Updating charts dynamically
-11. [Best Practices](11-best-practices.md) - Performance and design tips
-12. [Integration Examples](12-integration-examples.md) - Using charts in real applications
+9. [Area Fills](09-area-fills.md) - Filled area charts and range visualization
+10. [Mathematical Visualizations](10-mathematical-functions.md) - Plotting functions and equations
+11. [Real-time Data](11-realtime-data.md) - Updating charts dynamically
+12. [Best Practices](12-best-practices.md) - Performance and design tips
+13. [Integration Examples](13-integration-examples.md) - Using charts in real applications
 
 ## How to Use These Tutorials
 

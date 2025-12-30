@@ -50,22 +50,28 @@ Complete guide to mastering FyneSimpleChart.
 
 ### Advanced Level
 
-9. **[Mathematical Visualizations](09-mathematical-functions.md)** (20 min)
-   - Plotting functions
-   - Creating smooth curves
-   - Common mathematical patterns
+9. **[Area Fills](09-area-fills.md)** (20 min)
+   - Fill to zero axis
+   - Fill between curves
+   - Confidence intervals
+   - Revenue and range visualization
 
-10. **[Real-time Data](10-realtime-data.md)** (15 min)
+10. **[Mathematical Visualizations](10-mathematical-functions.md)** (20 min)
+    - Plotting functions
+    - Creating smooth curves
+    - Common mathematical patterns
+
+11. **[Real-time Data](11-realtime-data.md)** (15 min)
     - Dynamic updates
     - Streaming data
     - Performance optimization
 
-11. **[Best Practices](11-best-practices.md)** (15 min)
+12. **[Best Practices](12-best-practices.md)** (15 min)
     - Performance tips
     - Visual design guidelines
     - Common pitfalls
 
-12. **[Integration Examples](12-integration-examples.md)** (20 min)
+13. **[Integration Examples](13-integration-examples.md)** (20 min)
     - Real-world applications
     - Dashboard integration
     - IoT monitoring
@@ -79,8 +85,8 @@ Perfect if you just want to get started quickly:
 2. Basic Scatter Plot
 3. Customizing Appearance
 
-### Complete Course (3 hours)
-Work through all 12 tutorials in order for comprehensive mastery.
+### Complete Course (3.5 hours)
+Work through all 13 tutorials in order for comprehensive mastery.
 
 ### Specific Topics
 
@@ -96,12 +102,13 @@ Work through all 12 tutorials in order for comprehensive mastery.
 
 **Advanced Features**
 - Tutorial 5: Multiple Series
-- Tutorial 9: Mathematical Functions
-- Tutorial 10: Real-time Data
+- Tutorial 9: Area Fills
+- Tutorial 10: Mathematical Functions
+- Tutorial 11: Real-time Data
 
 **Professional Development**
-- Tutorial 11: Best Practices
-- Tutorial 12: Integration Examples
+- Tutorial 12: Best Practices
+- Tutorial 13: Integration Examples
 
 ## 📖 Additional Resources
 
@@ -120,11 +127,12 @@ Work through all 12 tutorials in order for comprehensive mastery.
 
 ## 🏆 Completion Certificate
 
-After completing all 12 tutorials, you will be able to:
+After completing all 13 tutorials, you will be able to:
 - ✅ Create professional scatter and line charts
 - ✅ Customize colors, sizes, and styles
 - ✅ Work with multiple data series
 - ✅ Handle negative values and all quadrants
+- ✅ Create area fills and range visualizations
 - ✅ Visualize mathematical functions
 - ✅ Implement real-time data updates
 - ✅ Follow industry best practices

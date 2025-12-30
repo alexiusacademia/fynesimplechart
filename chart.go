@@ -180,7 +180,19 @@ func (r *scatterChartRenderer) render() {
 	// Generate colors for plots
 	colors := r.generateColors(len(r.widget.Plots))
 
-	// Draw each plot
+	// Draw area fills first (so they appear behind everything)
+	for i, plot := range r.widget.Plots {
+		plotColor := colors[i]
+		if plot.PlotColor != nil {
+			plotColor = plot.PlotColor
+		}
+
+		if plot.FillArea {
+			r.drawAreaFill(i, plot, plotColor, minX, maxX, minY, maxY, plotAreaWidth, plotAreaHeight, mLeft, mTop)
+		}
+	}
+
+	// Draw each plot (lines and points on top of fills)
 	for i, plot := range r.widget.Plots {
 		plotColor := colors[i]
 		if plot.PlotColor != nil {
@@ -248,6 +260,154 @@ func (r *scatterChartRenderer) drawPlot(plot Plot, plotColor color.Color, minX, 
 			r.objects = append(r.objects, circle)
 		}
 	}
+}
+
+// Draw area fill for a plot using smooth polygon rendering
+func (r *scatterChartRenderer) drawAreaFill(plotIdx int, plot Plot, plotColor color.Color, minX, maxX, minY, maxY, plotWidth, plotHeight, mLeft, mTop float32) {
+	nodes := plot.Nodes
+	if len(nodes) < 2 {
+		return
+	}
+
+	rangeX := maxX - minX
+	rangeY := maxY - minY
+
+	// Transform function from data coordinates to screen coordinates
+	dataToScreenX := func(x float32) float32 {
+		return mLeft + ((x-minX)/rangeX)*plotWidth
+	}
+	dataToScreenY := func(y float32) float32 {
+		return mTop + plotHeight - ((y-minY)/rangeY)*plotHeight
+	}
+
+	// Determine fill color (use custom or derive from plot color with transparency)
+	fillColor := plot.FillColor
+	if fillColor == nil {
+		// Use plot color with 30% opacity
+		if rgba, ok := plotColor.(color.RGBA); ok {
+			fillColor = color.RGBA{R: rgba.R, G: rgba.G, B: rgba.B, A: 76} // 76 = 30% of 255
+		} else {
+			r, g, b, _ := plotColor.RGBA()
+			fillColor = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: 76}
+		}
+	}
+
+	// Fill to zero (Y-axis)
+	if plot.FillToZero {
+		zeroY := dataToScreenY(0)
+		// Clamp to plot area
+		if zeroY < mTop {
+			zeroY = mTop
+		}
+		if zeroY > mTop+plotHeight {
+			zeroY = mTop + plotHeight
+		}
+
+		// Draw vertical rectangles from curve to zero line
+		// Sample at many points for smoothness
+		steps := 500
+		for step := 0; step < steps; step++ {
+			t := float32(step) / float32(steps-1)
+			dataX := nodes[0].X + t*(nodes[len(nodes)-1].X-nodes[0].X)
+			dataY := interpolateY(nodes, dataX)
+
+			screenX := dataToScreenX(dataX)
+			screenY := dataToScreenY(dataY)
+
+			// Draw thin vertical rectangle from curve to zero
+			rectY1 := screenY
+			rectY2 := zeroY
+			if rectY1 > rectY2 {
+				rectY1, rectY2 = rectY2, rectY1
+			}
+
+			rectHeight := rectY2 - rectY1
+			if rectHeight > 0 {
+				rect := canvas.NewRectangle(fillColor)
+				rect.Move(fyne.NewPos(screenX, rectY1))
+				rect.Resize(fyne.NewSize(plotWidth/float32(steps)+0.5, rectHeight))
+				r.objects = append(r.objects, rect)
+			}
+		}
+	}
+
+	// Fill between two plots
+	if plot.FillToPlotIdx >= 0 && plot.FillToPlotIdx < len(r.widget.Plots) {
+		otherPlot := r.widget.Plots[plot.FillToPlotIdx]
+		otherNodes := otherPlot.Nodes
+
+		if len(otherNodes) < 2 {
+			return
+		}
+
+		// Find common X range
+		minCommonX := math.Max(float64(nodes[0].X), float64(otherNodes[0].X))
+		maxCommonX := math.Min(float64(nodes[len(nodes)-1].X), float64(otherNodes[len(otherNodes)-1].X))
+
+		if minCommonX >= maxCommonX {
+			return
+		}
+
+		// Draw vertical rectangles between the two curves
+		// Sample at many points for smoothness
+		steps := 500
+		for step := 0; step < steps; step++ {
+			t := float32(step) / float32(steps-1)
+			dataX := float32(minCommonX) + t*float32(maxCommonX-minCommonX)
+
+			// Get Y values for both curves at this X
+			dataY1 := interpolateY(nodes, dataX)
+			dataY2 := interpolateY(otherNodes, dataX)
+
+			// Convert to screen coordinates
+			screenX := dataToScreenX(dataX)
+			screenY1 := dataToScreenY(dataY1)
+			screenY2 := dataToScreenY(dataY2)
+
+			// Draw thin vertical rectangle between the two curves
+			rectY1 := screenY1
+			rectY2 := screenY2
+			if rectY1 > rectY2 {
+				rectY1, rectY2 = rectY2, rectY1
+			}
+
+			rectHeight := rectY2 - rectY1
+			if rectHeight > 0 {
+				rect := canvas.NewRectangle(fillColor)
+				rect.Move(fyne.NewPos(screenX, rectY1))
+				rect.Resize(fyne.NewSize(plotWidth/float32(steps)+0.5, rectHeight))
+				r.objects = append(r.objects, rect)
+			}
+		}
+	}
+}
+
+// Interpolate Y value for a given X in a set of nodes
+func interpolateY(nodes []Node, x float32) float32 {
+	if len(nodes) == 0 {
+		return 0
+	}
+
+	// If x is before first node, return first Y
+	if x <= nodes[0].X {
+		return nodes[0].Y
+	}
+
+	// If x is after last node, return last Y
+	if x >= nodes[len(nodes)-1].X {
+		return nodes[len(nodes)-1].Y
+	}
+
+	// Find the two nodes to interpolate between
+	for i := 0; i < len(nodes)-1; i++ {
+		if x >= nodes[i].X && x <= nodes[i+1].X {
+			// Linear interpolation
+			t := (x - nodes[i].X) / (nodes[i+1].X - nodes[i].X)
+			return nodes[i].Y + t*(nodes[i+1].Y-nodes[i].Y)
+		}
+	}
+
+	return nodes[len(nodes)-1].Y
 }
 
 // Draw grid lines

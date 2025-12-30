@@ -95,4 +95,4 @@ plot.PlotColor = brandPrimary
 
 ## Next Steps
 
-Continue to [Tutorial 9: Mathematical Visualizations](09-mathematical-functions.md).
+Continue to [Tutorial 9: Area Fills](09-area-fills.md) to learn how to create filled area charts.

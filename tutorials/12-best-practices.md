@@ -307,4 +307,4 @@ Before deploying your chart, verify:
 
 ## Next Steps
 
-Continue to [Tutorial 12: Integration Examples](12-integration-examples.md) for real-world application examples.
+Continue to [Tutorial 13: Integration Examples](13-integration-examples.md) for real-world application examples.
