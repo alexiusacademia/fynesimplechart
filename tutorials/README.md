@@ -23,6 +23,7 @@ Welcome to the FyneSimpleChart tutorials! These step-by-step guides will help yo
 12. [Best Practices](12-best-practices.md) - Performance and design tips
 13. [Integration Examples](13-integration-examples.md) - Using charts in real applications
 14. [Bar Charts](14-bar-charts.md) - Vertical bars and grouped bar charts
+15. [Enhanced Features](15-enhanced-features.md) - Axis titles, legend positioning, manual ranges, and data labels
 
 ## How to Use These Tutorials
 

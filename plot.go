@@ -26,6 +26,12 @@ type Plot struct {
 	BarWidth       float32 // Width of bars (0 = auto, default: 0.8 of available space)
 	BarBorderWidth float32 // Border width for bars (0 = no border)
 	BarBorderColor color.Color
+
+	// Data label properties
+	ShowDataLabels bool        // Enable data labels on points/bars
+	LabelFormat    string      // Format string for labels (e.g., "%.1f", "%.0f%%")
+	LabelColor     color.Color // Color for labels (nil uses theme foreground)
+	LabelSize      float32     // Font size for labels (0 = default 10)
 }
 
 func NewPlot(nodes []Node, title string) *Plot {
@@ -46,6 +52,10 @@ func NewPlot(nodes []Node, title string) *Plot {
 		BarWidth:       0.8, // 80% of available space per bar
 		BarBorderWidth: 0,
 		BarBorderColor: nil,
+		ShowDataLabels: false,
+		LabelFormat:    "%.1f",
+		LabelColor:     nil,
+		LabelSize:      10,
 	}
 
 	return plot

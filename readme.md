@@ -17,10 +17,13 @@ A professional, feature-rich charting library for [Fyne](https://fyne.io/) appli
 
 ### Professional Features
 - ✅ **Smart Grid System** - Automatic tick intervals with "nice numbers" algorithm
-- ✅ **Axis Labels** - Numeric labels with dynamic precision
+- ✅ **Axis Labels & Titles** - Numeric labels with dynamic precision plus custom axis titles
 - ✅ **Negative Values** - Full support for all four quadrants
 - ✅ **Multiple Series** - Compare unlimited datasets with auto-colors
 - ✅ **Custom Styling** - Colors, line widths, point sizes, bar borders
+- ✅ **Flexible Legends** - Positionable legends (top/bottom/left/right) or hide completely
+- ✅ **Data Labels** - Show values directly on points/bars with custom formatting
+- ✅ **Manual Axis Ranges** - Override auto-scaling for consistent comparisons
 - ✅ **Chart Titles** - Main title and series legends
 - ✅ **Real-time Updates** - Dynamic data visualization
 - ✅ **Professional Color Palette** - D3.js/Plotly-inspired 10-color system
@@ -122,7 +125,7 @@ plot.FillToZero = true  // Fill from curve to Y=0
 ## 📚 Documentation
 
 - **[Quick Start Guide](QUICKSTART.md)** - Fast reference for common tasks
-- **[Tutorials](tutorials/)** - 14 comprehensive step-by-step tutorials
+- **[Tutorials](tutorials/)** - 15 comprehensive step-by-step tutorials
 - **[API Documentation](IMPROVEMENTS.md)** - Complete feature reference
 
 ### Tutorials
@@ -143,6 +146,7 @@ Complete tutorial series covering everything from basics to advanced features:
 12. [Best Practices](tutorials/12-best-practices.md) - Performance & design
 13. [Integration Examples](tutorials/13-integration-examples.md) - Real applications
 14. [Bar Charts](tutorials/14-bar-charts.md) - Categorical data
+15. [Enhanced Features](tutorials/15-enhanced-features.md) - Axis titles, legends, ranges, labels
 
 ## 🎨 Configuration Options
 
@@ -172,6 +176,12 @@ plot.FillArea = true
 plot.FillToZero = true
 plot.FillToPlotIdx = 0
 plot.FillColor = fillColor
+
+// Data Labels
+plot.ShowDataLabels = true
+plot.LabelFormat = "%.1f"  // or "$%.0fK", "%.0f%%", etc.
+plot.LabelSize = 10
+plot.LabelColor = labelColor
 ```
 
 ### Chart Properties
@@ -179,8 +189,24 @@ plot.FillColor = fillColor
 ```go
 chart := fynesimplechart.NewGraphWidget(plots)
 
+// Titles
 chart.SetChartTitle("My Chart Title")
-chart.ShowGrid = true  // Toggle grid visibility
+chart.XAxisTitle = "Time (seconds)"
+chart.YAxisTitle = "Value (units)"
+
+// Display
+chart.ShowGrid = true   // Toggle grid visibility
+chart.ShowLegend = true // Toggle legend visibility
+
+// Legend Position
+chart.LegendPosition = fynesimplechart.LegendBottom
+// Options: LegendRight (default), LegendBottom, LegendTop, LegendLeft, LegendNone
+
+// Manual Axis Ranges (optional)
+minY := float32(0)
+maxY := float32(100)
+chart.MinY = &minY
+chart.MaxY = &maxY
 ```
 
 ## 🎯 Use Cases

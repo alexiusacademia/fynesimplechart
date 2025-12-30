@@ -83,6 +83,12 @@ Complete guide to mastering FyneSimpleChart.
     - Borders and styling
     - Categorical data visualization
 
+15. **[Enhanced Features](15-enhanced-features.md)** (25 min)
+    - Axis titles for context
+    - Flexible legend positioning
+    - Manual axis ranges
+    - Data labels on chart elements
+
 ## 🎯 Learning Paths
 
 ### Quick Start (45 minutes)
@@ -91,8 +97,8 @@ Perfect if you just want to get started quickly:
 2. Basic Scatter Plot
 3. Customizing Appearance
 
-### Complete Course (4 hours)
-Work through all 14 tutorials in order for comprehensive mastery.
+### Complete Course (4.5 hours)
+Work through all 15 tutorials in order for comprehensive mastery.
 
 ### Specific Topics
 
@@ -112,6 +118,7 @@ Work through all 14 tutorials in order for comprehensive mastery.
 - Tutorial 10: Mathematical Functions
 - Tutorial 11: Real-time Data
 - Tutorial 14: Bar Charts
+- Tutorial 15: Enhanced Features (Axis Titles, Legend, Ranges, Labels)
 
 **Professional Development**
 - Tutorial 12: Best Practices
@@ -134,7 +141,7 @@ Work through all 14 tutorials in order for comprehensive mastery.
 
 ## 🏆 Completion Certificate
 
-After completing all 14 tutorials, you will be able to:
+After completing all 15 tutorials, you will be able to:
 - ✅ Create professional scatter and line charts
 - ✅ Build bar charts for categorical data
 - ✅ Customize colors, sizes, and styles
@@ -143,6 +150,9 @@ After completing all 14 tutorials, you will be able to:
 - ✅ Create area fills and range visualizations
 - ✅ Visualize mathematical functions
 - ✅ Implement real-time data updates
+- ✅ Add axis titles and configure legends
+- ✅ Control axis ranges manually
+- ✅ Display data labels on chart elements
 - ✅ Follow industry best practices
 - ✅ Integrate charts into real applications
 

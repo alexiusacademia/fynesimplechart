@@ -22,12 +22,37 @@ const (
 	minTickSpacing      float32 = 40 // Minimum pixels between ticks
 )
 
+// LegendPosition defines where the legend should be displayed
+type LegendPosition int
+
+const (
+	LegendRight  LegendPosition = iota // Default: right side
+	LegendBottom                       // Bottom of chart
+	LegendTop                          // Top of chart
+	LegendLeft                         // Left side
+	LegendNone                         // No legend
+)
+
 type ScatterPlot struct {
 	widget.BaseWidget
 
 	Plots      []Plot
 	ChartTitle string
 	ShowGrid   bool
+
+	// Axis properties
+	XAxisTitle     string   // Title for X axis
+	YAxisTitle     string   // Title for Y axis
+	MinX           *float32 // Manual minimum X value (nil = auto)
+	MaxX           *float32 // Manual maximum X value (nil = auto)
+	MinY           *float32 // Manual minimum Y value (nil = auto)
+	MaxY           *float32 // Manual maximum Y value (nil = auto)
+	XTickInterval  *float32 // Custom X tick interval (nil = auto)
+	YTickInterval  *float32 // Custom Y tick interval (nil = auto)
+
+	// Legend properties
+	LegendPosition LegendPosition // Where to display the legend
+	ShowLegend     bool            // Whether to show legend
 
 	mTop    float32
 	mBottom float32
@@ -38,13 +63,23 @@ type ScatterPlot struct {
 // Constructor
 func NewGraphWidget(plots []Plot) *ScatterPlot {
 	w := &ScatterPlot{
-		Plots:      plots,
-		ChartTitle: "",
-		ShowGrid:   true,
-		mTop:       defaultMarginTop,
-		mBottom:    defaultMarginBottom,
-		mLeft:      defaultMarginLeft,
-		mRight:     defaultMarginRight,
+		Plots:          plots,
+		ChartTitle:     "",
+		ShowGrid:       true,
+		XAxisTitle:     "",
+		YAxisTitle:     "",
+		MinX:           nil,
+		MaxX:           nil,
+		MinY:           nil,
+		MaxY:           nil,
+		XTickInterval:  nil,
+		YTickInterval:  nil,
+		LegendPosition: LegendRight,
+		ShowLegend:     true,
+		mTop:           defaultMarginTop,
+		mBottom:        defaultMarginBottom,
+		mLeft:          defaultMarginLeft,
+		mRight:         defaultMarginRight,
 	}
 	w.ExtendBaseWidget(w)
 	return w
@@ -114,47 +149,80 @@ func (r *scatterChartRenderer) render() {
 	mTop, mBottom, mLeft, mRight := r.widget.mTop, r.widget.mBottom, r.widget.mLeft, r.widget.mRight
 	widgetSize := r.widget.Size()
 
-	// Get data bounds
-	maxX, err := MaxX(r.widget.Plots)
-	if err != nil {
-		return
-	}
-	minX, err := MinX(r.widget.Plots)
-	if err != nil {
-		return
-	}
-	maxY, err := MaxY(r.widget.Plots)
-	if err != nil {
-		return
-	}
-	minY, err := MinY(r.widget.Plots)
-	if err != nil {
-		return
+	// Get data bounds (use manual if provided, otherwise auto-calculate)
+	var minX, maxX, minY, maxY float32
+
+	if r.widget.MinX != nil {
+		minX = *r.widget.MinX
+	} else {
+		val, err := MinX(r.widget.Plots)
+		if err != nil {
+			return
+		}
+		minX = val
 	}
 
-	// Add 10% padding to the data range
+	if r.widget.MaxX != nil {
+		maxX = *r.widget.MaxX
+	} else {
+		val, err := MaxX(r.widget.Plots)
+		if err != nil {
+			return
+		}
+		maxX = val
+	}
+
+	if r.widget.MinY != nil {
+		minY = *r.widget.MinY
+	} else {
+		val, err := MinY(r.widget.Plots)
+		if err != nil {
+			return
+		}
+		minY = val
+	}
+
+	if r.widget.MaxY != nil {
+		maxY = *r.widget.MaxY
+	} else {
+		val, err := MaxY(r.widget.Plots)
+		if err != nil {
+			return
+		}
+		maxY = val
+	}
+
+	// Add 10% padding to the data range (only if using auto-calculated ranges)
 	rangeX := maxX - minX
 	rangeY := maxY - minY
 
-	if rangeX == 0 {
-		rangeX = 1
-		minX -= 0.5
-		maxX += 0.5
-	} else {
-		padding := rangeX * 0.1
-		minX -= padding
-		maxX += padding
+	if r.widget.MinX == nil && r.widget.MaxX == nil {
+		if rangeX == 0 {
+			rangeX = 1
+			minX -= 0.5
+			maxX += 0.5
+		} else {
+			padding := rangeX * 0.1
+			minX -= padding
+			maxX += padding
+		}
 	}
 
-	if rangeY == 0 {
-		rangeY = 1
-		minY -= 0.5
-		maxY += 0.5
-	} else {
-		padding := rangeY * 0.1
-		minY -= padding
-		maxY += padding
+	if r.widget.MinY == nil && r.widget.MaxY == nil {
+		if rangeY == 0 {
+			rangeY = 1
+			minY -= 0.5
+			maxY += 0.5
+		} else {
+			padding := rangeY * 0.1
+			minY -= padding
+			maxY += padding
+		}
 	}
+
+	// Recalculate ranges after padding
+	rangeX = maxX - minX
+	rangeY = maxY - minY
 
 	plotAreaWidth := widgetSize.Width - mLeft - mRight
 	plotAreaHeight := widgetSize.Height - mTop - mBottom
@@ -203,7 +271,14 @@ func (r *scatterChartRenderer) render() {
 	}
 
 	// Draw legend
-	r.drawLegend(colors, widgetSize.Width-mRight, mTop)
+	if r.widget.ShowLegend && r.widget.LegendPosition != LegendNone {
+		r.drawLegend(colors, widgetSize.Width, widgetSize.Height, mLeft, mTop, mRight, mBottom)
+	}
+
+	// Draw axis titles if present
+	if r.widget.XAxisTitle != "" || r.widget.YAxisTitle != "" {
+		r.drawAxisTitles(plotAreaWidth, plotAreaHeight, mLeft, mTop, mBottom, widgetSize.Width)
+	}
 
 	// Draw border
 	r.drawBorder(plotAreaWidth, plotAreaHeight, mLeft, mTop)
@@ -264,6 +339,61 @@ func (r *scatterChartRenderer) drawPlot(plot Plot, plotColor color.Color, minX, 
 			circle.Move(fyne.NewPos(x-radius, y-radius))
 			r.objects = append(r.objects, circle)
 		}
+	}
+
+	// Draw data labels if enabled
+	if plot.ShowDataLabels {
+		r.drawDataLabels(plot, nodes, dataToScreenX, dataToScreenY)
+	}
+}
+
+// Draw data labels on points or bars
+func (r *scatterChartRenderer) drawDataLabels(plot Plot, nodes []Node, dataToScreenX, dataToScreenY func(float32) float32) {
+	labelColor := plot.LabelColor
+	if labelColor == nil {
+		labelColor = theme.ForegroundColor()
+	}
+
+	labelSize := plot.LabelSize
+	if labelSize == 0 {
+		labelSize = 10
+	}
+
+	labelFormat := plot.LabelFormat
+	if labelFormat == "" {
+		labelFormat = "%.1f"
+	}
+
+	for _, node := range nodes {
+		x := dataToScreenX(node.X)
+		y := dataToScreenY(node.Y)
+
+		// Format the label text
+		labelText := fmt.Sprintf(labelFormat, node.Y)
+		label := canvas.NewText(labelText, labelColor)
+		label.TextSize = labelSize
+
+		labelWidth := label.MinSize().Width
+		labelHeight := label.MinSize().Height
+
+		// Position label above the point (or below if negative)
+		var labelX, labelY float32
+		if plot.ShowBars {
+			// For bars, center label on top of bar
+			labelX = x - labelWidth/2
+			if node.Y >= 0 {
+				labelY = y - labelHeight - 3
+			} else {
+				labelY = y + 3
+			}
+		} else {
+			// For points, position above the point
+			labelX = x - labelWidth/2
+			labelY = y - labelHeight - plot.PointSize - 3
+		}
+
+		label.Move(fyne.NewPos(labelX, labelY))
+		r.objects = append(r.objects, label)
 	}
 }
 
@@ -715,68 +845,182 @@ func (r *scatterChartRenderer) drawAxes(minX, maxX, minY, maxY, plotWidth, plotH
 	r.objects = append(r.objects, yLabel)
 }
 
-// Draw legend
-func (r *scatterChartRenderer) drawLegend(colors []color.Color, x, y float32) {
+// Draw axis titles
+func (r *scatterChartRenderer) drawAxisTitles(plotWidth, plotHeight, mLeft, mTop, mBottom, widgetWidth float32) {
+	foregroundColor := theme.ForegroundColor()
+
+	// X-axis title (centered below the plot)
+	if r.widget.XAxisTitle != "" {
+		xTitle := canvas.NewText(r.widget.XAxisTitle, foregroundColor)
+		xTitle.TextSize = 12
+		xTitle.TextStyle.Bold = true
+		xTitle.Alignment = fyne.TextAlignCenter
+		titleWidth := xTitle.MinSize().Width
+		xTitle.Move(fyne.NewPos(mLeft+(plotWidth-titleWidth)/2, mTop+plotHeight+mBottom-25))
+		r.objects = append(r.objects, xTitle)
+	}
+
+	// Y-axis title (rotated 90 degrees, centered on left side)
+	if r.widget.YAxisTitle != "" {
+		yTitle := canvas.NewText(r.widget.YAxisTitle, foregroundColor)
+		yTitle.TextSize = 12
+		yTitle.TextStyle.Bold = true
+		titleHeight := yTitle.MinSize().Height
+		// Position vertically centered on left margin
+		yTitle.Move(fyne.NewPos(15, mTop+(plotHeight+titleHeight)/2))
+		// Note: Fyne doesn't support text rotation easily, so this will be horizontal
+		// For a production library, you'd use a custom renderer with rotation
+		r.objects = append(r.objects, yTitle)
+	}
+}
+
+// Draw legend with support for different positions
+func (r *scatterChartRenderer) drawLegend(colors []color.Color, widgetWidth, widgetHeight, mLeft, mTop, mRight, mBottom float32) {
 	if len(r.widget.Plots) == 0 {
 		return
 	}
 
 	foregroundColor := theme.ForegroundColor()
 
-	legendTitle := canvas.NewText("LEGEND", foregroundColor)
-	legendTitle.TextSize = 11
-	legendTitle.TextStyle.Bold = true
-	legendTitle.Move(fyne.NewPos(x+5, y))
-	r.objects = append(r.objects, legendTitle)
+	// Calculate legend dimensions
+	itemHeight := float32(20)
+	titleHeight := float32(18)
+	numItems := len(r.widget.Plots)
 
-	currentY := y + 18
+	// Determine position based on LegendPosition
+	var x, y float32
 
-	for i, plot := range r.widget.Plots {
-		plotColor := colors[i]
-		if plot.PlotColor != nil {
-			plotColor = plot.PlotColor
+	switch r.widget.LegendPosition {
+	case LegendRight:
+		x = widgetWidth - mRight
+		y = mTop
+
+		legendTitle := canvas.NewText("LEGEND", foregroundColor)
+		legendTitle.TextSize = 11
+		legendTitle.TextStyle.Bold = true
+		legendTitle.Move(fyne.NewPos(x+5, y))
+		r.objects = append(r.objects, legendTitle)
+
+		currentY := y + titleHeight
+
+		for i, plot := range r.widget.Plots {
+			plotColor := colors[i]
+			if plot.PlotColor != nil {
+				plotColor = plot.PlotColor
+			}
+
+			r.drawLegendItem(plot, plotColor, x, currentY)
+			currentY += itemHeight
 		}
 
-		// Draw indicator based on plot style
-		if plot.ShowLine && !plot.ShowPoints {
-			// Line only - draw a short line
-			line := canvas.NewLine(plotColor)
-			line.StrokeWidth = plot.LineWidth
-			line.Position1 = fyne.NewPos(x+10, currentY+5)
-			line.Position2 = fyne.NewPos(x+25, currentY+5)
-			r.objects = append(r.objects, line)
-		} else if plot.ShowPoints && !plot.ShowLine {
-			// Points only - draw a circle
-			circle := canvas.NewCircle(plotColor)
-			circle.FillColor = plotColor
-			circle.StrokeColor = plotColor
-			circle.Resize(fyne.NewSize(6, 6))
-			circle.Move(fyne.NewPos(x+14, currentY+2))
-			r.objects = append(r.objects, circle)
-		} else {
-			// Both - draw line with circle
-			line := canvas.NewLine(plotColor)
-			line.StrokeWidth = plot.LineWidth
-			line.Position1 = fyne.NewPos(x+10, currentY+5)
-			line.Position2 = fyne.NewPos(x+25, currentY+5)
-			r.objects = append(r.objects, line)
+	case LegendBottom:
+		// Center legend at bottom
+		itemWidth := float32(120)
+		legendWidth := float32(numItems) * itemWidth
+		x = (widgetWidth - legendWidth) / 2
+		y = widgetHeight - mBottom + 20
 
-			circle := canvas.NewCircle(plotColor)
-			circle.FillColor = plotColor
-			circle.StrokeColor = plotColor
-			circle.Resize(fyne.NewSize(6, 6))
-			circle.Move(fyne.NewPos(x+14, currentY+2))
-			r.objects = append(r.objects, circle)
+		for i, plot := range r.widget.Plots {
+			plotColor := colors[i]
+			if plot.PlotColor != nil {
+				plotColor = plot.PlotColor
+			}
+
+			itemX := x + float32(i)*itemWidth
+			r.drawLegendItem(plot, plotColor, itemX, y)
 		}
 
-		// Label
-		label := canvas.NewText(plot.Title, foregroundColor)
-		label.TextSize = 10
-		label.Move(fyne.NewPos(x+30, currentY))
-		r.objects = append(r.objects, label)
+	case LegendTop:
+		// Center legend at top (below title if present)
+		itemWidth := float32(120)
+		legendWidth := float32(numItems) * itemWidth
+		x = (widgetWidth - legendWidth) / 2
+		y = float32(30)
+		if r.widget.ChartTitle != "" {
+			y = 35
+		}
 
-		currentY += 20
+		for i, plot := range r.widget.Plots {
+			plotColor := colors[i]
+			if plot.PlotColor != nil {
+				plotColor = plot.PlotColor
+			}
+
+			itemX := x + float32(i)*itemWidth
+			r.drawLegendItem(plot, plotColor, itemX, y)
+		}
+
+	case LegendLeft:
+		x = float32(10)
+		y = mTop
+
+		legendTitle := canvas.NewText("LEGEND", foregroundColor)
+		legendTitle.TextSize = 11
+		legendTitle.TextStyle.Bold = true
+		legendTitle.Move(fyne.NewPos(x+5, y))
+		r.objects = append(r.objects, legendTitle)
+
+		currentY := y + titleHeight
+
+		for i, plot := range r.widget.Plots {
+			plotColor := colors[i]
+			if plot.PlotColor != nil {
+				plotColor = plot.PlotColor
+			}
+
+			r.drawLegendItem(plot, plotColor, x, currentY)
+			currentY += itemHeight
+		}
 	}
+}
+
+// Draw a single legend item
+func (r *scatterChartRenderer) drawLegendItem(plot Plot, plotColor color.Color, x, y float32) {
+	foregroundColor := theme.ForegroundColor()
+
+	// Draw indicator based on plot style
+	if plot.ShowBars {
+		// Bar chart - draw a small rectangle
+		rect := canvas.NewRectangle(plotColor)
+		rect.Resize(fyne.NewSize(12, 12))
+		rect.Move(fyne.NewPos(x+10, y+2))
+		r.objects = append(r.objects, rect)
+	} else if plot.ShowLine && !plot.ShowPoints {
+		// Line only - draw a short line
+		line := canvas.NewLine(plotColor)
+		line.StrokeWidth = plot.LineWidth
+		line.Position1 = fyne.NewPos(x+10, y+5)
+		line.Position2 = fyne.NewPos(x+25, y+5)
+		r.objects = append(r.objects, line)
+	} else if plot.ShowPoints && !plot.ShowLine {
+		// Points only - draw a circle
+		circle := canvas.NewCircle(plotColor)
+		circle.FillColor = plotColor
+		circle.StrokeColor = plotColor
+		circle.Resize(fyne.NewSize(6, 6))
+		circle.Move(fyne.NewPos(x+14, y+2))
+		r.objects = append(r.objects, circle)
+	} else {
+		// Both - draw line with circle
+		line := canvas.NewLine(plotColor)
+		line.StrokeWidth = plot.LineWidth
+		line.Position1 = fyne.NewPos(x+10, y+5)
+		line.Position2 = fyne.NewPos(x+25, y+5)
+		r.objects = append(r.objects, line)
+
+		circle := canvas.NewCircle(plotColor)
+		circle.FillColor = plotColor
+		circle.StrokeColor = plotColor
+		circle.Resize(fyne.NewSize(6, 6))
+		circle.Move(fyne.NewPos(x+14, y+2))
+		r.objects = append(r.objects, circle)
+	}
+
+	// Label
+	label := canvas.NewText(plot.Title, foregroundColor)
+	label.TextSize = 10
+	label.Move(fyne.NewPos(x+30, y))
+	r.objects = append(r.objects, label)
 }
 
 // Draw border around plot area
