@@ -227,7 +227,12 @@ func (r *scatterChartRenderer) drawPlot(plot Plot, plotColor color.Color, minX, 
 		return mTop + plotHeight - ((y-minY)/rangeY)*plotHeight
 	}
 
-	// Draw lines first (so they appear behind points)
+	// Draw bars first (so they appear behind lines and points)
+	if plot.ShowBars {
+		r.drawBars(plot, plotColor, minX, maxX, minY, maxY, plotWidth, plotHeight, mLeft, mTop, dataToScreenX, dataToScreenY)
+	}
+
+	// Draw lines (so they appear behind points)
 	if plot.ShowLine && len(nodes) > 1 {
 		for k := 0; k < len(nodes)-1; k++ {
 			x1 := dataToScreenX(nodes[k].X)
@@ -258,6 +263,126 @@ func (r *scatterChartRenderer) drawPlot(plot Plot, plotColor color.Color, minX, 
 			circle.Resize(fyne.NewSize(radius*2, radius*2))
 			circle.Move(fyne.NewPos(x-radius, y-radius))
 			r.objects = append(r.objects, circle)
+		}
+	}
+}
+
+// Draw bars for a bar chart
+func (r *scatterChartRenderer) drawBars(plot Plot, plotColor color.Color, minX, maxX, minY, maxY, plotWidth, plotHeight, mLeft, mTop float32, dataToScreenX, dataToScreenY func(float32) float32) {
+	nodes := plot.Nodes
+	if len(nodes) == 0 {
+		return
+	}
+
+	// Calculate bar width
+	// If BarWidth is 0, use auto-sizing based on data spacing
+	barWidthData := plot.BarWidth
+	if barWidthData == 0 {
+		barWidthData = 0.8
+	}
+
+	// Calculate the spacing between data points
+	var spacing float32
+	if len(nodes) > 1 {
+		// Average spacing between consecutive X values
+		totalSpacing := float32(0)
+		for i := 0; i < len(nodes)-1; i++ {
+			totalSpacing += nodes[i+1].X - nodes[i].X
+		}
+		spacing = totalSpacing / float32(len(nodes)-1)
+	} else {
+		// Single bar - use a reasonable default
+		spacing = (maxX - minX) / 10
+		if spacing == 0 {
+			spacing = 1
+		}
+	}
+
+	// Convert spacing to screen coordinates
+	barWidthScreen := spacing * barWidthData * (plotWidth / (maxX - minX))
+
+	// Get zero line position
+	zeroY := dataToScreenY(0)
+	// Clamp to plot area
+	if zeroY < mTop {
+		zeroY = mTop
+	}
+	if zeroY > mTop+plotHeight {
+		zeroY = mTop + plotHeight
+	}
+
+	// Draw each bar
+	for _, node := range nodes {
+		centerX := dataToScreenX(node.X)
+		topY := dataToScreenY(node.Y)
+
+		// Calculate bar position and size
+		barX := centerX - barWidthScreen/2
+		barY := topY
+		barHeight := zeroY - topY
+
+		// Handle negative values
+		if barHeight < 0 {
+			barY = zeroY
+			barHeight = -barHeight
+		}
+
+		// Skip bars with zero or negligible height
+		if barHeight < 0.5 {
+			continue
+		}
+
+		// Create the bar rectangle
+		bar := canvas.NewRectangle(plotColor)
+		bar.Move(fyne.NewPos(barX, barY))
+		bar.Resize(fyne.NewSize(barWidthScreen, barHeight))
+		r.objects = append(r.objects, bar)
+
+		// Draw border if specified
+		if plot.BarBorderWidth > 0 {
+			borderColor := plot.BarBorderColor
+			if borderColor == nil {
+				// Default to darker version of bar color
+				if rgba, ok := plotColor.(color.RGBA); ok {
+					borderColor = color.RGBA{
+						R: uint8(float32(rgba.R) * 0.7),
+						G: uint8(float32(rgba.G) * 0.7),
+						B: uint8(float32(rgba.B) * 0.7),
+						A: rgba.A,
+					}
+				} else {
+					borderColor = plotColor
+				}
+			}
+
+			// Draw four border lines
+			// Top
+			topLine := canvas.NewLine(borderColor)
+			topLine.StrokeWidth = plot.BarBorderWidth
+			topLine.Position1 = fyne.NewPos(barX, barY)
+			topLine.Position2 = fyne.NewPos(barX+barWidthScreen, barY)
+			r.objects = append(r.objects, topLine)
+
+			// Bottom
+			bottomLine := canvas.NewLine(borderColor)
+			bottomLine.StrokeWidth = plot.BarBorderWidth
+			bottomLine.Position1 = fyne.NewPos(barX, barY+barHeight)
+			bottomLine.Position2 = fyne.NewPos(barX+barWidthScreen, barY+barHeight)
+			r.objects = append(r.objects, bottomLine)
+
+			// Left
+			leftLine := canvas.NewLine(borderColor)
+			leftLine.StrokeWidth = plot.BarBorderWidth
+			leftLine.Position1 = fyne.NewPos(barX, barY)
+			leftLine.Position2 = fyne.NewPos(barX, barY+barHeight)
+			r.objects = append(r.objects, leftLine)
+
+			// Right
+			rightLine := canvas.NewLine(borderColor)
+			rightLine.StrokeWidth = plot.BarBorderWidth
+			rightLine.Position1 = fyne.NewPos(barX+barWidthScreen, barY)
+			rightLine.Position2 = fyne.NewPos(barX+barWidthScreen, barY+barHeight)
+			r.objects = append(r.objects, rightLine)
 		}
 	}
 }

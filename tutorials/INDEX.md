@@ -77,6 +77,12 @@ Complete guide to mastering FyneSimpleChart.
     - IoT monitoring
     - Financial tracking
 
+14. **[Bar Charts](14-bar-charts.md)** (20 min)
+    - Vertical bar charts
+    - Grouped bars
+    - Borders and styling
+    - Categorical data visualization
+
 ## 🎯 Learning Paths
 
 ### Quick Start (45 minutes)
@@ -85,8 +91,8 @@ Perfect if you just want to get started quickly:
 2. Basic Scatter Plot
 3. Customizing Appearance
 
-### Complete Course (3.5 hours)
-Work through all 13 tutorials in order for comprehensive mastery.
+### Complete Course (4 hours)
+Work through all 14 tutorials in order for comprehensive mastery.
 
 ### Specific Topics
 
@@ -105,6 +111,7 @@ Work through all 13 tutorials in order for comprehensive mastery.
 - Tutorial 9: Area Fills
 - Tutorial 10: Mathematical Functions
 - Tutorial 11: Real-time Data
+- Tutorial 14: Bar Charts
 
 **Professional Development**
 - Tutorial 12: Best Practices
@@ -127,8 +134,9 @@ Work through all 13 tutorials in order for comprehensive mastery.
 
 ## 🏆 Completion Certificate
 
-After completing all 13 tutorials, you will be able to:
+After completing all 14 tutorials, you will be able to:
 - ✅ Create professional scatter and line charts
+- ✅ Build bar charts for categorical data
 - ✅ Customize colors, sizes, and styles
 - ✅ Work with multiple data series
 - ✅ Handle negative values and all quadrants

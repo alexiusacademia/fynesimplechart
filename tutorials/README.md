@@ -22,6 +22,7 @@ Welcome to the FyneSimpleChart tutorials! These step-by-step guides will help yo
 11. [Real-time Data](11-realtime-data.md) - Updating charts dynamically
 12. [Best Practices](12-best-practices.md) - Performance and design tips
 13. [Integration Examples](13-integration-examples.md) - Using charts in real applications
+14. [Bar Charts](14-bar-charts.md) - Vertical bars and grouped bar charts
 
 ## How to Use These Tutorials
 
