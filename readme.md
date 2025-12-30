@@ -74,3 +74,8 @@ func main() {
 3. Graph preview for version v0.1.2
 
 <img width="412" alt="Screenshot 2024-04-13 at 1 57 41 PM" src="https://github.com/alexiusacademia/fynesimplechart/assets/19258246/e12d0d05-d7a0-4505-9c00-c605309c2049">
+
+4. Graph preview for version v0.1.3
+
+<img width="1198" height="827" alt="Screenshot 2025-12-30 at 9 31 50 PM" src="https://github.com/user-attachments/assets/4ead8bb9-cb52-46f6-9d02-03ad2f0cbb0b" />
+
