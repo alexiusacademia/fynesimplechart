@@ -1,9 +1,9 @@
 package fynesimplechart
 
 import (
+	"fmt"
 	"image/color"
-	"log"
-	"math/rand"
+	"math"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -11,10 +11,23 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+	defaultMarginTop    float32 = 50
+	defaultMarginBottom float32 = 60
+	defaultMarginLeft   float32 = 80
+	defaultMarginRight  float32 = 100
+	gridLineWidth       float32 = 0.5
+	axisLineWidth       float32 = 1.5
+	tickLength          float32 = 5
+	minTickSpacing      float32 = 40 // Minimum pixels between ticks
+)
+
 type ScatterPlot struct {
 	widget.BaseWidget
 
-	Plots []Plot
+	Plots      []Plot
+	ChartTitle string
+	ShowGrid   bool
 
 	mTop    float32
 	mBottom float32
@@ -25,24 +38,31 @@ type ScatterPlot struct {
 // Constructor
 func NewGraphWidget(plots []Plot) *ScatterPlot {
 	w := &ScatterPlot{
-		Plots:   plots,
-		mTop:    30,
-		mBottom: 30,
-		mLeft:   60,
-		mRight:  80,
+		Plots:      plots,
+		ChartTitle: "",
+		ShowGrid:   true,
+		mTop:       defaultMarginTop,
+		mBottom:    defaultMarginBottom,
+		mLeft:      defaultMarginLeft,
+		mRight:     defaultMarginRight,
 	}
 	w.ExtendBaseWidget(w)
 	return w
 }
 
-// Generates a new renderer for the RatingCurveView.
-func (v *ScatterPlot) CreateRenderer() fyne.WidgetRenderer {
-	v.ExtendBaseWidget(v) // Ensure the base widget is extended properly
+// SetChartTitle sets the main title for the chart
+func (v *ScatterPlot) SetChartTitle(title string) {
+	v.ChartTitle = title
+	v.Refresh()
+}
 
+// Generates a new renderer for the ScatterPlot.
+func (v *ScatterPlot) CreateRenderer() fyne.WidgetRenderer {
+	v.ExtendBaseWidget(v)
 	return &scatterChartRenderer{widget: v}
 }
 
-// Responsible for rendering the RatingCurveView.
+// Responsible for rendering the ScatterPlot.
 type scatterChartRenderer struct {
 	widget  *ScatterPlot
 	objects []fyne.CanvasObject
@@ -50,24 +70,22 @@ type scatterChartRenderer struct {
 
 // Calculates the minimum size of the graph.
 func (r *scatterChartRenderer) MinSize() fyne.Size {
-	return r.widget.Size() // Provide a default value
+	return r.widget.Size()
 }
 
 // Layout the components.
 func (r *scatterChartRenderer) Layout(size fyne.Size) {
-	r.drawNodes()
-	r.drawBorder()
+	r.render()
 }
 
 // Called when the theme changes.
 func (r *scatterChartRenderer) ApplyTheme() {
-	// Update any theme dependent properties here
+	r.render()
 }
 
 // Updates the widget's rendering.
 func (r *scatterChartRenderer) Refresh() {
-	r.drawNodes()
-	r.drawBorder()
+	r.render()
 	canvas.Refresh(r.widget)
 }
 
@@ -83,24 +101,20 @@ func (r *scatterChartRenderer) Objects() []fyne.CanvasObject {
 
 // Called when the widget is destroyed.
 func (r *scatterChartRenderer) Destroy() {
-	// Perform necessary cleanup
 }
 
-func (r *scatterChartRenderer) getMargins() (float32, float32, float32, float32) {
-	return r.widget.mTop, r.widget.mBottom, r.widget.mLeft, r.widget.mRight
-}
-
-// Draw the nodes of the graph.
-func (r *scatterChartRenderer) drawNodes() {
-	// Removed all objects to redraw
+// Main render function
+func (r *scatterChartRenderer) render() {
 	r.objects = []fyne.CanvasObject{}
 
-	mTop, mBottom, mLeft, mRight := r.getMargins()
+	if len(r.widget.Plots) == 0 {
+		return
+	}
 
+	mTop, mBottom, mLeft, mRight := r.widget.mTop, r.widget.mBottom, r.widget.mLeft, r.widget.mRight
 	widgetSize := r.widget.Size()
-	widgetWidth := widgetSize.Width
 
-	// Get the minimums and maximums of coordinates
+	// Get data bounds
 	maxX, err := MaxX(r.widget.Plots)
 	if err != nil {
 		return
@@ -118,154 +132,444 @@ func (r *scatterChartRenderer) drawNodes() {
 		return
 	}
 
-	colors := []color.Color{}
+	// Add 10% padding to the data range
+	rangeX := maxX - minX
+	rangeY := maxY - minY
 
-	for i := 0; i < len(r.widget.Plots); i++ {
-		// Generate randome color
-		red := rand.Intn(255)
-		green := rand.Intn(255)
-		blue := rand.Intn(255)
-
-		plotColor := color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: 255}
-		colors = append(colors, plotColor)
-
-		nodes := r.widget.Plots[i].Nodes
-
-		chartUnScaledWidth := maxX - minX
-		chartUnScaledHeight := maxY - minY
-		if chartUnScaledHeight == 0 {
-			log.Fatal("Nothing to plot in y axis")
-			return
-		}
-
-		// Get the ratio of chart max width and max height plots
-		plotAreaWidth := widgetWidth - mLeft - mRight
-		plotAreaHeight := widgetSize.Height - mTop - mBottom
-
-		scaleX := plotAreaWidth / (chartUnScaledWidth + 2)
-		scaleY := plotAreaHeight / (chartUnScaledHeight + 2)
-
-		// originPosition := fyne.NewPos(mLeft, widgetSize.Height-mBottom)
-
-		// Start the plotting of nodes
-		for j := 0; j < len(nodes); j++ {
-			// Create a canvas circle
-			c := canvas.NewCircle(plotColor)
-			c.FillColor = plotColor
-			c.StrokeColor = plotColor
-			c.StrokeWidth = 1
-			radius := 2
-
-			x := (nodes[j].X+1)*scaleX + mLeft - float32(radius)                 // Always add 1 for the clearance
-			y := mTop + plotAreaHeight - (nodes[j].Y+1)*scaleY - float32(radius) // Always add 1 for the clearance
-
-			c.Resize(fyne.NewSize(float32(radius)*2, float32(radius)*2))
-			c.Move(fyne.NewPos(x, y))
-			r.objects = append(r.objects, c)
-		}
-
-		// Connect nodes
-		if r.widget.Plots[i].ShowLine {
-			for k := 0; k < (len(nodes) - 1); k++ {
-				x1 := (nodes[k].X+1)*scaleX + mLeft
-				y1 := mTop + plotAreaHeight - (nodes[k].Y+1)*scaleY
-				x2 := (nodes[k+1].X+1)*scaleX + mLeft
-				y2 := mTop + plotAreaHeight - (nodes[k+1].Y+1)*scaleY
-
-				l := canvas.NewLine(plotColor)
-				l.StrokeWidth = 1.5
-				l.StrokeColor = plotColor
-				l.Position1 = fyne.NewPos(x1, y1)
-				l.Position2 = fyne.NewPos(x2, y2)
-				r.objects = append(r.objects, l)
-			}
-		}
-
-		// Draw axes
-		xAxis := canvas.NewLine(theme.ForegroundColor())
-		xAxis.StrokeWidth = 0.5
-		xAxis.StrokeColor = theme.ForegroundColor()
-		xAxis.Position1.X = mLeft
-		xAxis.Position1.Y = mTop + plotAreaHeight - scaleY
-		xAxis.Position2.X = mLeft + plotAreaWidth
-		xAxis.Position2.Y = xAxis.Position1.Y
-		r.objects = append(r.objects, xAxis)
-
-		yAxis := canvas.NewLine(theme.ForegroundColor())
-		yAxis.StrokeWidth = 0.5
-		yAxis.StrokeColor = theme.ForegroundColor()
-		yAxis.Position1.X = mLeft + scaleX
-		yAxis.Position1.Y = mTop
-		yAxis.Position2.X = mLeft + scaleX
-		yAxis.Position2.Y = mTop + plotAreaHeight
-		r.objects = append(r.objects, yAxis)
-
-		xAxisArrow := canvas.NewText(">", theme.ForegroundColor())
-		xAxisArrow.TextSize = 18
-		xAxisArrow.Move(fyne.NewPos(mLeft+plotAreaWidth-xAxisArrow.MinSize().Width,
-			mTop+plotAreaHeight-xAxisArrow.MinSize().Height/2-scaleY,
-		))
-		r.objects = append(r.objects, xAxisArrow)
-
-		yAxisArrow := canvas.NewText("^", theme.ForegroundColor())
-		yAxisArrow.TextSize = 18
-		yAxisArrow.Move(fyne.NewPos(mLeft+scaleX-yAxisArrow.MinSize().Width/2, mTop))
-		r.objects = append(r.objects, yAxisArrow)
-
-		axisDirectionTextY := canvas.NewText("Y", theme.ForegroundColor())
-		axisDirectionTextY.TextSize = 16
-		axisDirectionTextY.Move(fyne.NewPos(
-			mLeft+scaleX-axisDirectionTextY.MinSize().Width,
-			mTop+mTop/2))
-		r.objects = append(r.objects, axisDirectionTextY)
-
-		axisDirectionTextX := canvas.NewText("X", theme.ForegroundColor())
-		axisDirectionTextX.TextSize = 16
-		axisDirectionTextX.Move(fyne.NewPos(
-			mLeft+plotAreaWidth-mRight/2,
-			mTop+plotAreaHeight-scaleY,
-		))
-		r.objects = append(r.objects, axisDirectionTextX)
+	if rangeX == 0 {
+		rangeX = 1
+		minX -= 0.5
+		maxX += 0.5
+	} else {
+		padding := rangeX * 0.1
+		minX -= padding
+		maxX += padding
 	}
 
-	// Draw legends
-	legendText := canvas.NewText("LEGEND", theme.ForegroundColor())
-	legendText.TextSize = 12
-	legendText.TextStyle.Bold = true
-	legendText.Move(fyne.NewPos(widgetWidth-mRight+5, mTop+5))
-	r.objects = append(r.objects, legendText)
+	if rangeY == 0 {
+		rangeY = 1
+		minY -= 0.5
+		maxY += 0.5
+	} else {
+		padding := rangeY * 0.1
+		minY -= padding
+		maxY += padding
+	}
 
-	currentY := mTop + 20
+	plotAreaWidth := widgetSize.Width - mLeft - mRight
+	plotAreaHeight := widgetSize.Height - mTop - mBottom
 
-	for i := 0; i < len(r.widget.Plots); i++ {
-		currentY += 20
-		c := canvas.NewCircle(colors[i])
-		c.FillColor = colors[i]
-		c.StrokeColor = colors[i]
-		c.StrokeWidth = 1
-		c.Resize(fyne.NewSize(5, 5))
-		c.Move(fyne.NewPos(widgetWidth-mRight+10, currentY))
-		r.objects = append(r.objects, c)
+	// Draw chart title if present
+	if r.widget.ChartTitle != "" {
+		titleText := canvas.NewText(r.widget.ChartTitle, theme.ForegroundColor())
+		titleText.TextSize = 16
+		titleText.TextStyle.Bold = true
+		titleText.Alignment = fyne.TextAlignCenter
+		titleWidth := titleText.MinSize().Width
+		titleText.Move(fyne.NewPos((widgetSize.Width-titleWidth)/2, 10))
+		r.objects = append(r.objects, titleText)
+	}
 
-		label := canvas.NewText(r.widget.Plots[i].Title, colors[i])
-		label.Move(fyne.NewPos(widgetWidth-mRight+10+20, currentY-label.MinSize().Height/2))
+	// Draw grid and axes
+	if r.widget.ShowGrid {
+		r.drawGrid(minX, maxX, minY, maxY, plotAreaWidth, plotAreaHeight, mLeft, mTop)
+	}
+
+	r.drawAxes(minX, maxX, minY, maxY, plotAreaWidth, plotAreaHeight, mLeft, mTop, mBottom)
+
+	// Generate colors for plots
+	colors := r.generateColors(len(r.widget.Plots))
+
+	// Draw each plot
+	for i, plot := range r.widget.Plots {
+		plotColor := colors[i]
+		if plot.PlotColor != nil {
+			plotColor = plot.PlotColor
+		}
+
+		r.drawPlot(plot, plotColor, minX, maxX, minY, maxY, plotAreaWidth, plotAreaHeight, mLeft, mTop)
+	}
+
+	// Draw legend
+	r.drawLegend(colors, widgetSize.Width-mRight, mTop)
+
+	// Draw border
+	r.drawBorder(plotAreaWidth, plotAreaHeight, mLeft, mTop)
+}
+
+// Draw a single plot
+func (r *scatterChartRenderer) drawPlot(plot Plot, plotColor color.Color, minX, maxX, minY, maxY, plotWidth, plotHeight, mLeft, mTop float32) {
+	nodes := plot.Nodes
+	if len(nodes) == 0 {
+		return
+	}
+
+	rangeX := maxX - minX
+	rangeY := maxY - minY
+
+	// Transform function from data coordinates to screen coordinates
+	dataToScreenX := func(x float32) float32 {
+		return mLeft + ((x-minX)/rangeX)*plotWidth
+	}
+	dataToScreenY := func(y float32) float32 {
+		return mTop + plotHeight - ((y-minY)/rangeY)*plotHeight
+	}
+
+	// Draw lines first (so they appear behind points)
+	if plot.ShowLine && len(nodes) > 1 {
+		for k := 0; k < len(nodes)-1; k++ {
+			x1 := dataToScreenX(nodes[k].X)
+			y1 := dataToScreenY(nodes[k].Y)
+			x2 := dataToScreenX(nodes[k+1].X)
+			y2 := dataToScreenY(nodes[k+1].Y)
+
+			line := canvas.NewLine(plotColor)
+			line.StrokeWidth = plot.LineWidth
+			line.Position1 = fyne.NewPos(x1, y1)
+			line.Position2 = fyne.NewPos(x2, y2)
+			r.objects = append(r.objects, line)
+		}
+	}
+
+	// Draw points
+	if plot.ShowPoints {
+		for j := 0; j < len(nodes); j++ {
+			x := dataToScreenX(nodes[j].X)
+			y := dataToScreenY(nodes[j].Y)
+
+			circle := canvas.NewCircle(plotColor)
+			circle.FillColor = plotColor
+			circle.StrokeColor = plotColor
+			circle.StrokeWidth = 1
+
+			radius := plot.PointSize
+			circle.Resize(fyne.NewSize(radius*2, radius*2))
+			circle.Move(fyne.NewPos(x-radius, y-radius))
+			r.objects = append(r.objects, circle)
+		}
+	}
+}
+
+// Draw grid lines
+func (r *scatterChartRenderer) drawGrid(minX, maxX, minY, maxY, plotWidth, plotHeight, mLeft, mTop float32) {
+	gridColor := color.RGBA{R: 128, G: 128, B: 128, A: 50}
+
+	rangeX := maxX - minX
+	rangeY := maxY - minY
+
+	// Calculate nice tick intervals
+	numXTicks := int(plotWidth / minTickSpacing)
+	numYTicks := int(plotHeight / minTickSpacing)
+
+	if numXTicks < 2 {
+		numXTicks = 2
+	}
+	if numYTicks < 2 {
+		numYTicks = 2
+	}
+
+	xTickInterval := calculateNiceInterval(rangeX, numXTicks)
+	yTickInterval := calculateNiceInterval(rangeY, numYTicks)
+
+	// Draw vertical grid lines
+	xStart := math.Ceil(float64(minX/xTickInterval)) * float64(xTickInterval)
+	for x := float32(xStart); x <= maxX; x += xTickInterval {
+		screenX := mLeft + ((x-minX)/rangeX)*plotWidth
+		line := canvas.NewLine(gridColor)
+		line.StrokeWidth = gridLineWidth
+		line.Position1 = fyne.NewPos(screenX, mTop)
+		line.Position2 = fyne.NewPos(screenX, mTop+plotHeight)
+		r.objects = append(r.objects, line)
+	}
+
+	// Draw horizontal grid lines
+	yStart := math.Ceil(float64(minY/yTickInterval)) * float64(yTickInterval)
+	for y := float32(yStart); y <= maxY; y += yTickInterval {
+		screenY := mTop + plotHeight - ((y-minY)/rangeY)*plotHeight
+		line := canvas.NewLine(gridColor)
+		line.StrokeWidth = gridLineWidth
+		line.Position1 = fyne.NewPos(mLeft, screenY)
+		line.Position2 = fyne.NewPos(mLeft+plotWidth, screenY)
+		r.objects = append(r.objects, line)
+	}
+}
+
+// Draw axes with labels
+func (r *scatterChartRenderer) drawAxes(minX, maxX, minY, maxY, plotWidth, plotHeight, mLeft, mTop, mBottom float32) {
+	foregroundColor := theme.ForegroundColor()
+	rangeX := maxX - minX
+	rangeY := maxY - minY
+
+	// Calculate tick intervals
+	numXTicks := int(plotWidth / minTickSpacing)
+	numYTicks := int(plotHeight / minTickSpacing)
+
+	if numXTicks < 2 {
+		numXTicks = 2
+	}
+	if numYTicks < 2 {
+		numYTicks = 2
+	}
+
+	xTickInterval := calculateNiceInterval(rangeX, numXTicks)
+	yTickInterval := calculateNiceInterval(rangeY, numYTicks)
+
+	// Draw X axis
+	xAxisY := mTop + plotHeight
+	if minY < 0 && maxY > 0 {
+		// Zero line is visible
+		xAxisY = mTop + plotHeight - ((-minY)/rangeY)*plotHeight
+	}
+
+	xAxis := canvas.NewLine(foregroundColor)
+	xAxis.StrokeWidth = axisLineWidth
+	xAxis.Position1 = fyne.NewPos(mLeft, xAxisY)
+	xAxis.Position2 = fyne.NewPos(mLeft+plotWidth, xAxisY)
+	r.objects = append(r.objects, xAxis)
+
+	// Draw X axis ticks and labels
+	xStart := math.Ceil(float64(minX/xTickInterval)) * float64(xTickInterval)
+	for x := float32(xStart); x <= maxX; x += xTickInterval {
+		screenX := mLeft + ((x-minX)/rangeX)*plotWidth
+
+		// Tick mark
+		tick := canvas.NewLine(foregroundColor)
+		tick.StrokeWidth = axisLineWidth
+		tick.Position1 = fyne.NewPos(screenX, xAxisY)
+		tick.Position2 = fyne.NewPos(screenX, xAxisY+tickLength)
+		r.objects = append(r.objects, tick)
+
+		// Label
+		labelText := formatAxisLabel(x)
+		label := canvas.NewText(labelText, foregroundColor)
+		label.TextSize = 10
+		labelWidth := label.MinSize().Width
+		label.Move(fyne.NewPos(screenX-labelWidth/2, xAxisY+tickLength+2))
 		r.objects = append(r.objects, label)
 	}
 
+	// Draw Y axis
+	yAxisX := mLeft
+	if minX < 0 && maxX > 0 {
+		// Zero line is visible
+		yAxisX = mLeft + ((-minX)/rangeX)*plotWidth
+	}
+
+	yAxis := canvas.NewLine(foregroundColor)
+	yAxis.StrokeWidth = axisLineWidth
+	yAxis.Position1 = fyne.NewPos(yAxisX, mTop)
+	yAxis.Position2 = fyne.NewPos(yAxisX, mTop+plotHeight)
+	r.objects = append(r.objects, yAxis)
+
+	// Draw Y axis ticks and labels
+	yStart := math.Ceil(float64(minY/yTickInterval)) * float64(yTickInterval)
+	for y := float32(yStart); y <= maxY; y += yTickInterval {
+		screenY := mTop + plotHeight - ((y-minY)/rangeY)*plotHeight
+
+		// Tick mark
+		tick := canvas.NewLine(foregroundColor)
+		tick.StrokeWidth = axisLineWidth
+		tick.Position1 = fyne.NewPos(yAxisX-tickLength, screenY)
+		tick.Position2 = fyne.NewPos(yAxisX, screenY)
+		r.objects = append(r.objects, tick)
+
+		// Label
+		labelText := formatAxisLabel(y)
+		label := canvas.NewText(labelText, foregroundColor)
+		label.TextSize = 10
+		labelWidth := label.MinSize().Width
+		labelHeight := label.MinSize().Height
+		label.Move(fyne.NewPos(yAxisX-tickLength-labelWidth-5, screenY-labelHeight/2))
+		r.objects = append(r.objects, label)
+	}
+
+	// Draw axis arrows
+	arrowSize := float32(8)
+
+	// X axis arrow
+	xArrowY := xAxisY
+	xArrowTip := mLeft + plotWidth
+	xArrow1 := canvas.NewLine(foregroundColor)
+	xArrow1.StrokeWidth = axisLineWidth
+	xArrow1.Position1 = fyne.NewPos(xArrowTip, xArrowY)
+	xArrow1.Position2 = fyne.NewPos(xArrowTip-arrowSize, xArrowY-arrowSize/2)
+	r.objects = append(r.objects, xArrow1)
+
+	xArrow2 := canvas.NewLine(foregroundColor)
+	xArrow2.StrokeWidth = axisLineWidth
+	xArrow2.Position1 = fyne.NewPos(xArrowTip, xArrowY)
+	xArrow2.Position2 = fyne.NewPos(xArrowTip-arrowSize, xArrowY+arrowSize/2)
+	r.objects = append(r.objects, xArrow2)
+
+	// Y axis arrow
+	yArrowX := yAxisX
+	yArrowTip := mTop
+	yArrow1 := canvas.NewLine(foregroundColor)
+	yArrow1.StrokeWidth = axisLineWidth
+	yArrow1.Position1 = fyne.NewPos(yArrowX, yArrowTip)
+	yArrow1.Position2 = fyne.NewPos(yArrowX-arrowSize/2, yArrowTip+arrowSize)
+	r.objects = append(r.objects, yArrow1)
+
+	yArrow2 := canvas.NewLine(foregroundColor)
+	yArrow2.StrokeWidth = axisLineWidth
+	yArrow2.Position1 = fyne.NewPos(yArrowX, yArrowTip)
+	yArrow2.Position2 = fyne.NewPos(yArrowX+arrowSize/2, yArrowTip+arrowSize)
+	r.objects = append(r.objects, yArrow2)
+
+	// Axis labels (X and Y markers)
+	xLabel := canvas.NewText("X", foregroundColor)
+	xLabel.TextSize = 14
+	xLabel.TextStyle.Bold = true
+	xLabel.Move(fyne.NewPos(xArrowTip+5, xArrowY-xLabel.MinSize().Height/2))
+	r.objects = append(r.objects, xLabel)
+
+	yLabel := canvas.NewText("Y", foregroundColor)
+	yLabel.TextSize = 14
+	yLabel.TextStyle.Bold = true
+	yLabel.Move(fyne.NewPos(yArrowX-yLabel.MinSize().Width/2, yArrowTip-yLabel.MinSize().Height-5))
+	r.objects = append(r.objects, yLabel)
 }
 
-func (r *scatterChartRenderer) drawBorder() {
-	size := r.widget.Size()
-	width := size.Width
-	height := size.Height
-	width = width - r.widget.mLeft - r.widget.mRight
-	height = height - r.widget.mTop - r.widget.mBottom
+// Draw legend
+func (r *scatterChartRenderer) drawLegend(colors []color.Color, x, y float32) {
+	if len(r.widget.Plots) == 0 {
+		return
+	}
 
-	border := canvas.NewRectangle(theme.ForegroundColor())
+	foregroundColor := theme.ForegroundColor()
+
+	legendTitle := canvas.NewText("LEGEND", foregroundColor)
+	legendTitle.TextSize = 11
+	legendTitle.TextStyle.Bold = true
+	legendTitle.Move(fyne.NewPos(x+5, y))
+	r.objects = append(r.objects, legendTitle)
+
+	currentY := y + 18
+
+	for i, plot := range r.widget.Plots {
+		plotColor := colors[i]
+		if plot.PlotColor != nil {
+			plotColor = plot.PlotColor
+		}
+
+		// Draw indicator based on plot style
+		if plot.ShowLine && !plot.ShowPoints {
+			// Line only - draw a short line
+			line := canvas.NewLine(plotColor)
+			line.StrokeWidth = plot.LineWidth
+			line.Position1 = fyne.NewPos(x+10, currentY+5)
+			line.Position2 = fyne.NewPos(x+25, currentY+5)
+			r.objects = append(r.objects, line)
+		} else if plot.ShowPoints && !plot.ShowLine {
+			// Points only - draw a circle
+			circle := canvas.NewCircle(plotColor)
+			circle.FillColor = plotColor
+			circle.StrokeColor = plotColor
+			circle.Resize(fyne.NewSize(6, 6))
+			circle.Move(fyne.NewPos(x+14, currentY+2))
+			r.objects = append(r.objects, circle)
+		} else {
+			// Both - draw line with circle
+			line := canvas.NewLine(plotColor)
+			line.StrokeWidth = plot.LineWidth
+			line.Position1 = fyne.NewPos(x+10, currentY+5)
+			line.Position2 = fyne.NewPos(x+25, currentY+5)
+			r.objects = append(r.objects, line)
+
+			circle := canvas.NewCircle(plotColor)
+			circle.FillColor = plotColor
+			circle.StrokeColor = plotColor
+			circle.Resize(fyne.NewSize(6, 6))
+			circle.Move(fyne.NewPos(x+14, currentY+2))
+			r.objects = append(r.objects, circle)
+		}
+
+		// Label
+		label := canvas.NewText(plot.Title, foregroundColor)
+		label.TextSize = 10
+		label.Move(fyne.NewPos(x+30, currentY))
+		r.objects = append(r.objects, label)
+
+		currentY += 20
+	}
+}
+
+// Draw border around plot area
+func (r *scatterChartRenderer) drawBorder(width, height, x, y float32) {
+	border := canvas.NewRectangle(color.Transparent)
 	border.Resize(fyne.NewSize(width, height))
-	border.Move(fyne.NewPos(r.widget.mLeft, r.widget.mTop))
-	border.FillColor = nil
+	border.Move(fyne.NewPos(x, y))
 	border.StrokeColor = theme.ForegroundColor()
-	border.StrokeWidth = 2
+	border.StrokeWidth = 1.5
 	r.objects = append(r.objects, border)
+}
+
+// Generate colors using a better color palette
+func (r *scatterChartRenderer) generateColors(count int) []color.Color {
+	// Professional color palette with good contrast
+	predefinedColors := []color.Color{
+		color.RGBA{R: 31, G: 119, B: 180, A: 255},   // Blue
+		color.RGBA{R: 255, G: 127, B: 14, A: 255},   // Orange
+		color.RGBA{R: 44, G: 160, B: 44, A: 255},    // Green
+		color.RGBA{R: 214, G: 39, B: 40, A: 255},    // Red
+		color.RGBA{R: 148, G: 103, B: 189, A: 255},  // Purple
+		color.RGBA{R: 140, G: 86, B: 75, A: 255},    // Brown
+		color.RGBA{R: 227, G: 119, B: 194, A: 255},  // Pink
+		color.RGBA{R: 127, G: 127, B: 127, A: 255},  // Gray
+		color.RGBA{R: 188, G: 189, B: 34, A: 255},   // Olive
+		color.RGBA{R: 23, G: 190, B: 207, A: 255},   // Cyan
+	}
+
+	colors := make([]color.Color, count)
+	for i := 0; i < count; i++ {
+		colors[i] = predefinedColors[i%len(predefinedColors)]
+	}
+	return colors
+}
+
+// Calculate nice interval for axis ticks
+func calculateNiceInterval(dataRange float32, numTicks int) float32 {
+	if dataRange == 0 {
+		return 1
+	}
+
+	roughInterval := dataRange / float32(numTicks)
+
+	// Find the magnitude of the interval
+	magnitude := math.Pow(10, math.Floor(math.Log10(float64(roughInterval))))
+
+	// Normalize the interval
+	normalized := float64(roughInterval) / magnitude
+
+	var niceInterval float64
+	if normalized <= 1 {
+		niceInterval = 1
+	} else if normalized <= 2 {
+		niceInterval = 2
+	} else if normalized <= 5 {
+		niceInterval = 5
+	} else {
+		niceInterval = 10
+	}
+
+	return float32(niceInterval * magnitude)
+}
+
+// Format axis label with appropriate precision
+func formatAxisLabel(value float32) string {
+	absValue := float32(math.Abs(float64(value)))
+
+	if absValue == 0 {
+		return "0"
+	} else if absValue >= 1000 {
+		return fmt.Sprintf("%.0f", value)
+	} else if absValue >= 100 {
+		return fmt.Sprintf("%.1f", value)
+	} else if absValue >= 10 {
+		return fmt.Sprintf("%.1f", value)
+	} else if absValue >= 1 {
+		return fmt.Sprintf("%.2f", value)
+	} else {
+		return fmt.Sprintf("%.3f", value)
+	}
 }
