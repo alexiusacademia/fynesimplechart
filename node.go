@@ -23,19 +23,11 @@ func MinY(plots []Plot) (float32, error) {
 	}
 
 	minimum := nodes[0].Y
-	hasNegative := false
 
 	for i := 0; i < len(nodes); i++ {
 		if nodes[i].Y < minimum {
 			minimum = nodes[i].Y
 		}
-		if nodes[i].Y < 0 {
-			hasNegative = true
-		}
-	}
-
-	if hasNegative {
-		minimum -= 1 // Add 1 unit for clearance
 	}
 
 	return minimum, nil
@@ -60,8 +52,6 @@ func MaxY(plots []Plot) (float32, error) {
 		}
 	}
 
-	maximum += 1 // Add 1 unit for clearance
-
 	return maximum, nil
 }
 
@@ -77,24 +67,12 @@ func MinX(plots []Plot) (float32, error) {
 	}
 
 	minimum := nodes[0].X
-	hasNegative := false
 
 	for i := 0; i < len(nodes); i++ {
 		if nodes[i].X < minimum {
 			minimum = nodes[i].X
 		}
-		if nodes[i].X < 0 {
-			hasNegative = true
-		}
 	}
-
-	if hasNegative {
-		minimum -= 1 // Add 1 unit for clearance
-	} else {
-		minimum = 0
-	}
-
-	// Check if all nodes are in the right quadrant
 
 	return minimum, nil
 }
@@ -117,8 +95,6 @@ func MaxX(plots []Plot) (float32, error) {
 			maximum = nodes[i].X
 		}
 	}
-
-	maximum += 1 // Add 1 unit for clearance
 
 	return maximum, nil
 }
