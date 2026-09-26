@@ -215,12 +215,17 @@ func main() {
                 }
             }
 
-            // Update plots
-            tempSensor.plot.Nodes = tempSensor.nodes
-            humiditySensor.plot.Nodes = humiditySensor.nodes
-            chart.Refresh()
-
-            status.SetText("Status: Last update " + time.Now().Format("15:04:05"))
+            // Update the chart on the UI goroutine with copies of the data
+            // (the chart keeps its own copy of each Plot, so update it through
+            // chart.Plots rather than tempSensor.plot / humiditySensor.plot)
+            tempData := append([]fynesimplechart.Node(nil), tempSensor.nodes...)
+            humidityData := append([]fynesimplechart.Node(nil), humiditySensor.nodes...)
+            fyne.Do(func() {
+                chart.Plots[0].Nodes = tempData
+                chart.Plots[1].Nodes = humidityData
+                chart.Refresh()
+                status.SetText("Status: Last update " + time.Now().Format("15:04:05"))
+            })
 
             t += 0.5
             time.Sleep(1 * time.Second)
@@ -326,14 +331,12 @@ chart.Resize(fyne.NewSize(800, 600))
 ```go
 type AppState struct {
     data   []float32
-    plot   *fynesimplechart.Plot
     chart  *fynesimplechart.ScatterPlot
 }
 
 func (s *AppState) UpdateData(newData []float32) {
     s.data = newData
-    s.plot.Nodes = createNodes(newData)
-    s.chart.Refresh()
+    s.chart.SetPlotNodes(0, createNodes(newData))
 }
 ```
 

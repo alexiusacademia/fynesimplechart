@@ -8,11 +8,32 @@ Learn how to update charts dynamically with real-time data.
 
 ## Understanding Widget Refresh
 
-Fyne widgets need to be refreshed to show updated data:
+`NewGraphWidget` stores its own copy of every `Plot` you pass in. Changing the
+original `plot` afterwards (for example `plot.Nodes = nodes`) does **not**
+affect the chart. Update the chart's data with `SetPlotNodes`, which also
+redraws it:
 
 ```go
-chart.Refresh()  // Updates the chart display
+chart.SetPlotNodes(0, nodes)  // Replace the data of the first plot and redraw
 ```
+
+You can also edit `chart.Plots[i]` directly and then call `chart.Refresh()`.
+
+### Updating from a goroutine
+
+Since Fyne v2.6, any change to the UI made from another goroutine must be
+wrapped in `fyne.Do`. Otherwise Fyne logs threading warnings. Pass a copy of
+your slice so the goroutine can keep changing its own data while the chart draws:
+
+```go
+snapshot := append([]fynesimplechart.Node(nil), nodes...)
+fyne.Do(func() {
+    chart.SetPlotNodes(0, snapshot)
+})
+```
+
+On Fyne versions before v2.6, `fyne.Do` does not exist; call
+`chart.SetPlotNodes(0, snapshot)` directly.
 
 ## Basic Real-time Example
 
@@ -57,9 +78,11 @@ func main() {
                 }
             }
 
-            // Update plot and refresh
-            plot.Nodes = nodes
-            chart.Refresh()
+            // Update the chart (on the UI goroutine) with a copy of the data
+            snapshot := append([]fynesimplechart.Node(nil), nodes...)
+            fyne.Do(func() {
+                chart.SetPlotNodes(0, snapshot)
+            })
 
             x++
             time.Sleep(1 * time.Second)
@@ -181,8 +204,10 @@ func main() {
                 }
             }
 
-            plot.Nodes = nodes
-            chart.Refresh()
+            snapshot := append([]fynesimplechart.Node(nil), nodes...)
+            fyne.Do(func() {
+                chart.SetPlotNodes(0, snapshot)
+            })
 
             t += 0.5
             time.Sleep(500 * time.Millisecond)

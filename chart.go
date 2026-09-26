@@ -91,6 +91,18 @@ func (v *ScatterPlot) SetChartTitle(title string) {
 	v.Refresh()
 }
 
+// SetPlotNodes replaces the data of the plot at index and redraws the chart.
+// The chart keeps its own copy of each Plot, so changing a Plot value after
+// passing it to NewGraphWidget has no effect; use this method (or modify
+// v.Plots directly) instead. Out-of-range indexes are ignored.
+func (v *ScatterPlot) SetPlotNodes(index int, nodes []Node) {
+	if index < 0 || index >= len(v.Plots) {
+		return
+	}
+	v.Plots[index].Nodes = nodes
+	v.Refresh()
+}
+
 // Generates a new renderer for the ScatterPlot.
 func (v *ScatterPlot) CreateRenderer() fyne.WidgetRenderer {
 	v.ExtendBaseWidget(v)

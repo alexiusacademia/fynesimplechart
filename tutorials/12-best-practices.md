@@ -25,16 +25,18 @@ for i := 0; i < 10000; i++ {  // 10,000 points
 
 ### 2. Efficient Updates
 ```go
-// Good: Update plot data, then refresh once
-plot.Nodes = newNodes
-plot.LineWidth = 2.5
-plot.PointSize = 4
+// Good: Update the chart's plot data, then refresh once.
+// Edit chart.Plots[i]: the chart keeps its own copy of each Plot, so
+// changing the Plot you passed to NewGraphWidget has no effect.
+chart.Plots[0].Nodes = newNodes
+chart.Plots[0].LineWidth = 2.5
+chart.Plots[0].PointSize = 4
 chart.Refresh()  // Single refresh
 
 // Avoid: Multiple refreshes
-plot.Nodes = newNodes
+chart.Plots[0].Nodes = newNodes
 chart.Refresh()
-plot.LineWidth = 2.5
+chart.Plots[0].LineWidth = 2.5
 chart.Refresh()  // Unnecessary extra refresh
 ```
 
@@ -263,8 +265,7 @@ sort.Slice(nodes, func(i, j int) bool {
 for _, point := range newPoints {
     nodes = append(nodes, point)
 }
-plot.Nodes = nodes
-chart.Refresh()  // Single refresh
+chart.SetPlotNodes(0, nodes)  // Single refresh
 ```
 
 ### 3. Memory Leaks in Real-time
